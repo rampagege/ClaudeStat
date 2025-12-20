@@ -235,10 +235,16 @@ Business rules encoded in domain:
 - **Sparkle**: Auto-update functionality
 - **Swift Testing**: Modern test framework
 
+## Implemented Features
+
+1. **Multi-provider support** - Claude, Codex, and Gemini probes implemented
+2. **Auto-refresh** - `startMonitoring(interval:)` returns `AsyncStream<MonitoringEvent>`
+3. **System notifications** - `NotificationQuotaObserver` alerts on status degradation
+4. **Shared app state** - `@Observable AppState` for reactive UI updates
+
 ## Next Steps
 
-1. **Add Codex/Gemini probes** - Implement `CodexUsageProbe`, `GeminiUsageProbe`
-2. **Add auto-refresh** - Timer-based polling in `QuotaMonitor`
-3. **Add preferences UI** - Settings for refresh interval, enabled providers
-4. **Configure Sparkle** - Add appcast URL for auto-updates
-5. **Add notifications** - Alert when quota drops below threshold
+1. **Add preferences UI** - Settings for refresh interval, enabled providers
+2. **Configure Sparkle** - Add appcast URL for auto-updates
+3. **Add keyboard shortcuts** - Quick refresh, open dashboard
+4. **Add login helpers** - Prompt to login when auth required
