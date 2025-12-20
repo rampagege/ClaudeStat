@@ -134,12 +134,7 @@ struct MenuContentView: View {
 
     private var overallStatusColor: Color {
         let status = snapshots.values.map(\.overallStatus).max() ?? .healthy
-        switch status {
-        case .healthy: return .green
-        case .warning: return .orange
-        case .critical: return .red
-        case .depleted: return .red
-        }
+        return status.displayColor
     }
 
     private var overallStatusText: String {

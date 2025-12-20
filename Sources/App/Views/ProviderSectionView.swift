@@ -11,7 +11,7 @@ struct ProviderSectionView: View {
             // Header
             HStack {
                 Circle()
-                    .fill(statusColor)
+                    .fill(snapshot.overallStatus.displayColor)
                     .frame(width: 8, height: 8)
 
                 Text(snapshot.provider.name)
@@ -55,14 +55,5 @@ struct ProviderSectionView: View {
             GridItem(.flexible(), spacing: 8),
             GridItem(.flexible(), spacing: 8),
         ]
-    }
-
-    private var statusColor: Color {
-        switch snapshot.overallStatus {
-        case .healthy: .green
-        case .warning: .orange
-        case .critical: .red
-        case .depleted: .red
-        }
     }
 }

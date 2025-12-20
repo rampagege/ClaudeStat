@@ -3,13 +3,13 @@ import Foundation
 @testable import Domain
 import Mockable
 
-@Suite("Quota Monitor Tests")
+@Suite
 struct QuotaMonitorTests {
 
     // MARK: - Single Provider Monitoring
 
-    @Test("Monitors single provider and returns snapshot")
-    func monitorsSingleProviderAndReturnsSnapshot() async throws {
+    @Test
+    func `monitor fetches usage from a single provider`() async throws {
         // Given
         let mockProbe = MockUsageProbePort()
         let expectedSnapshot = UsageSnapshot(
@@ -36,8 +36,8 @@ struct QuotaMonitorTests {
         #expect(snapshots[.claude]?.quota(for: .session)?.percentRemaining == 65)
     }
 
-    @Test("Returns empty when provider is unavailable")
-    func returnsEmptyWhenProviderUnavailable() async throws {
+    @Test
+    func `monitor skips unavailable providers`() async throws {
         // Given
         let mockProbe = MockUsageProbePort()
         given(mockProbe).provider.willReturn(.claude)
@@ -54,8 +54,8 @@ struct QuotaMonitorTests {
 
     // MARK: - Multiple Provider Monitoring
 
-    @Test("Monitors multiple providers concurrently")
-    func monitorsMultipleProvidersConcurrently() async throws {
+    @Test
+    func `monitor fetches from multiple providers concurrently`() async throws {
         // Given
         let claudeProbe = MockUsageProbePort()
         let codexProbe = MockUsageProbePort()
@@ -90,8 +90,8 @@ struct QuotaMonitorTests {
         #expect(snapshots[.codex]?.quota(for: .session)?.percentRemaining == 40)
     }
 
-    @Test("Partial failure does not affect other providers")
-    func partialFailureDoesNotAffectOtherProviders() async throws {
+    @Test
+    func `one provider failure does not affect others`() async throws {
         // Given
         let claudeProbe = MockUsageProbePort()
         let codexProbe = MockUsageProbePort()
@@ -115,7 +115,7 @@ struct QuotaMonitorTests {
         // When
         let snapshots = try await monitor.refreshAll()
 
-        // Then - Claude succeeded, Codex failed but didn't affect Claude
+        // Then
         #expect(snapshots.count == 1)
         #expect(snapshots[.claude] != nil)
         #expect(snapshots[.codex] == nil)
@@ -123,20 +123,18 @@ struct QuotaMonitorTests {
 
     // MARK: - Status Change Detection
 
-    @Test("Detects status change from healthy to warning")
-    func detectsStatusChangeFromHealthyToWarning() async throws {
+    @Test
+    func `monitor notifies observer when status changes`() async throws {
         // Given
         let mockProbe = MockUsageProbePort()
         let mockObserver = MockQuotaObserverPort()
 
-        // First snapshot - healthy
         let healthySnapshot = UsageSnapshot(
             provider: .claude,
             quotas: [UsageQuota(percentRemaining: 60, quotaType: .session, provider: .claude)],
             capturedAt: Date()
         )
 
-        // Second snapshot - warning
         let warningSnapshot = UsageSnapshot(
             provider: .claude,
             quotas: [UsageQuota(percentRemaining: 30, quotaType: .session, provider: .claude)],
@@ -157,8 +155,8 @@ struct QuotaMonitorTests {
         let monitor = QuotaMonitor(probes: [mockProbe], observer: mockObserver)
 
         // When
-        _ = try await monitor.refreshAll() // First refresh - healthy
-        _ = try await monitor.refreshAll() // Second refresh - warning
+        _ = try await monitor.refreshAll() // First: healthy
+        _ = try await monitor.refreshAll() // Second: warning
 
         // Then
         verify(mockObserver).onStatusChanged(
@@ -168,10 +166,10 @@ struct QuotaMonitorTests {
         ).called(.once)
     }
 
-    // MARK: - Current Snapshot Access
+    // MARK: - Accessing Current Snapshots
 
-    @Test("Returns current snapshot for provider")
-    func returnsCurrentSnapshotForProvider() async throws {
+    @Test
+    func `monitor stores and returns current snapshot for provider`() async throws {
         // Given
         let mockProbe = MockUsageProbePort()
         let snapshot = UsageSnapshot(
@@ -194,8 +192,8 @@ struct QuotaMonitorTests {
         #expect(currentSnapshot?.quota(for: .session)?.percentRemaining == 50)
     }
 
-    @Test("Returns nil for unmonitored provider")
-    func returnsNilForUnmonitoredProvider() async {
+    @Test
+    func `monitor returns nil for provider without data`() async {
         // Given
         let monitor = QuotaMonitor(probes: [])
 

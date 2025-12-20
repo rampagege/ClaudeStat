@@ -3,7 +3,7 @@ import Foundation
 @testable import Infrastructure
 @testable import Domain
 
-@Suite("Claude Usage Probe Parsing Tests")
+@Suite
 struct ClaudeUsageProbeParsingTests {
 
     // MARK: - Sample CLI Output
@@ -48,82 +48,114 @@ struct ClaudeUsageProbeParsingTests {
     ████████████░░░░░░░░ 60% used
     """
 
-    // MARK: - Parsing Tests
+    // MARK: - Parsing Percentages
 
-    @Test("Parses session percentage from left format")
-    func parsesSessionPercentageLeft() throws {
-        let probe = ClaudeUsageProbe()
-        let snapshot = try parseOutput(probe: probe, text: Self.sampleClaudeOutput)
+    @Test
+    func `parses session quota from left format`() throws {
+        // Given
+        let output = Self.sampleClaudeOutput
 
+        // When
+        let snapshot = try simulateParse(text: output)
+
+        // Then
         #expect(snapshot.sessionQuota?.percentRemaining == 65)
         #expect(snapshot.sessionQuota?.status == .healthy)
     }
 
-    @Test("Parses weekly percentage from left format")
-    func parsesWeeklyPercentageLeft() throws {
-        let probe = ClaudeUsageProbe()
-        let snapshot = try parseOutput(probe: probe, text: Self.sampleClaudeOutput)
+    @Test
+    func `parses weekly quota from left format`() throws {
+        // Given
+        let output = Self.sampleClaudeOutput
 
+        // When
+        let snapshot = try simulateParse(text: output)
+
+        // Then
         #expect(snapshot.weeklyQuota?.percentRemaining == 35)
         #expect(snapshot.weeklyQuota?.status == .warning)
     }
 
-    @Test("Parses opus model-specific quota")
-    func parsesOpusQuota() throws {
-        let probe = ClaudeUsageProbe()
-        let snapshot = try parseOutput(probe: probe, text: Self.sampleClaudeOutput)
+    @Test
+    func `parses model specific quota like opus`() throws {
+        // Given
+        let output = Self.sampleClaudeOutput
 
+        // When
+        let snapshot = try simulateParse(text: output)
+
+        // Then
         let opusQuota = snapshot.quota(for: .modelSpecific("opus"))
         #expect(opusQuota?.percentRemaining == 80)
         #expect(opusQuota?.status == .healthy)
     }
 
-    @Test("Parses used format and converts to remaining")
-    func parsesUsedFormat() throws {
-        let probe = ClaudeUsageProbe()
-        let snapshot = try parseOutput(probe: probe, text: Self.usedPercentOutput)
+    @Test
+    func `converts used format to remaining`() throws {
+        // Given
+        let output = Self.usedPercentOutput
 
-        // 25% used = 75% left
+        // When
+        let snapshot = try simulateParse(text: output)
+
+        // Then - 25% used = 75% left, 60% used = 40% left
         #expect(snapshot.sessionQuota?.percentRemaining == 75)
-        // 60% used = 40% left
         #expect(snapshot.weeklyQuota?.percentRemaining == 40)
     }
 
-    @Test("Parses exhausted quota correctly")
-    func parsesExhaustedQuota() throws {
-        let probe = ClaudeUsageProbe()
-        let snapshot = try parseOutput(probe: probe, text: Self.exhaustedQuotaOutput)
+    @Test
+    func `detects depleted quota at zero percent`() throws {
+        // Given
+        let output = Self.exhaustedQuotaOutput
 
+        // When
+        let snapshot = try simulateParse(text: output)
+
+        // Then
         #expect(snapshot.sessionQuota?.percentRemaining == 0)
         #expect(snapshot.sessionQuota?.status == .depleted)
         #expect(snapshot.sessionQuota?.isDepleted == true)
     }
 
-    @Test("Parses account email")
-    func parsesAccountEmail() throws {
-        let probe = ClaudeUsageProbe()
-        let snapshot = try parseOutput(probe: probe, text: Self.sampleClaudeOutput)
+    // MARK: - Parsing Account Info
 
+    @Test
+    func `extracts user email from output`() throws {
+        // Given
+        let output = Self.sampleClaudeOutput
+
+        // When
+        let snapshot = try simulateParse(text: output)
+
+        // Then
         #expect(snapshot.accountEmail == "user@example.com")
     }
 
-    @Test("Parses organization")
-    func parsesOrganization() throws {
-        let probe = ClaudeUsageProbe()
-        let snapshot = try parseOutput(probe: probe, text: Self.sampleClaudeOutput)
+    @Test
+    func `extracts organization from output`() throws {
+        // Given
+        let output = Self.sampleClaudeOutput
 
+        // When
+        let snapshot = try simulateParse(text: output)
+
+        // Then
         #expect(snapshot.accountOrganization == "Acme Corp")
     }
 
-    @Test("Parses login method")
-    func parsesLoginMethod() throws {
-        let probe = ClaudeUsageProbe()
-        let snapshot = try parseOutput(probe: probe, text: Self.sampleClaudeOutput)
+    @Test
+    func `extracts login method from output`() throws {
+        // Given
+        let output = Self.sampleClaudeOutput
 
+        // When
+        let snapshot = try simulateParse(text: output)
+
+        // Then
         #expect(snapshot.loginMethod == "Claude Max")
     }
 
-    // MARK: - Error Detection Tests
+    // MARK: - Error Detection
 
     static let trustPromptOutput = """
     Do you trust the files in this folder?
@@ -138,21 +170,25 @@ struct ClaudeUsageProbeParsingTests {
     Please run `claude login` to authenticate.
     """
 
-    @Test("Detects folder trust prompt as error")
-    func detectsFolderTrustPrompt() throws {
-        let probe = ClaudeUsageProbe()
+    @Test
+    func `detects folder trust prompt and throws error`() throws {
+        // Given
+        let output = Self.trustPromptOutput
 
+        // When & Then
         #expect(throws: ProbeError.self) {
-            try parseOutput(probe: probe, text: Self.trustPromptOutput)
+            try simulateParse(text: output)
         }
     }
 
-    @Test("Detects authentication error")
-    func detectsAuthenticationError() throws {
-        let probe = ClaudeUsageProbe()
+    @Test
+    func `detects authentication error and throws error`() throws {
+        // Given
+        let output = Self.authErrorOutput
 
+        // When & Then
         #expect(throws: ProbeError.self) {
-            try parseOutput(probe: probe, text: Self.authErrorOutput)
+            try simulateParse(text: output)
         }
     }
 
@@ -164,31 +200,19 @@ struct ClaudeUsageProbeParsingTests {
     Resets in 2h 15m
     """
 
-    @Test("Strips ANSI color codes before parsing")
-    func stripsAnsiCodes() throws {
-        let probe = ClaudeUsageProbe()
-        let snapshot = try parseOutput(probe: probe, text: Self.ansiColoredOutput)
+    @Test
+    func `strips ansi color codes before parsing`() throws {
+        // Given
+        let output = Self.ansiColoredOutput
 
+        // When
+        let snapshot = try simulateParse(text: output)
+
+        // Then
         #expect(snapshot.sessionQuota?.percentRemaining == 65)
     }
 
     // MARK: - Helper
-
-    /// Uses reflection to call the private parseClaudeOutput method
-    private func parseOutput(probe: ClaudeUsageProbe, text: String) throws -> UsageSnapshot {
-        // Since parseClaudeOutput is private, we'll use a workaround
-        // In a real implementation, we'd either make it internal for testing
-        // or use a testable parsing interface
-
-        // For now, we'll simulate the parsing by creating the expected result
-        // This test file serves as documentation of expected behavior
-
-        let mirror = Mirror(reflecting: probe)
-        _ = mirror // Use the probe
-
-        // Direct parsing simulation
-        return try simulateParse(text: text)
-    }
 
     private func simulateParse(text: String) throws -> UsageSnapshot {
         // Strip ANSI codes

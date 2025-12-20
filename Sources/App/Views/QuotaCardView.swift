@@ -17,7 +17,7 @@ struct QuotaCardView: View {
             Text("\(Int(quota.percentRemaining))%")
                 .font(.title2)
                 .fontWeight(.semibold)
-                .foregroundStyle(statusColor)
+                .foregroundStyle(quota.status.displayColor)
 
             // Progress bar
             GeometryReader { geometry in
@@ -29,7 +29,7 @@ struct QuotaCardView: View {
 
                     // Fill
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(statusColor)
+                        .fill(quota.status.displayColor)
                         .frame(width: geometry.size.width * quota.percentRemaining / 100, height: 4)
                 }
             }
@@ -38,14 +38,5 @@ struct QuotaCardView: View {
         .padding(12)
         .background(Color.primary.opacity(0.05))
         .cornerRadius(8)
-    }
-
-    private var statusColor: Color {
-        switch quota.status {
-        case .healthy: .green
-        case .warning: .orange
-        case .critical: .red
-        case .depleted: .red
-        }
     }
 }
