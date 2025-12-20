@@ -85,7 +85,8 @@ public struct ClaudeUsageProbe: UsageProbePort {
             percentRemaining: Double(sessionPct),
             quotaType: .session,
             provider: .claude,
-            resetsAt: parseResetDate(sessionReset)
+            resetsAt: parseResetDate(sessionReset),
+            resetText: cleanResetText(sessionReset)
         ))
 
         if let weeklyPct {
@@ -93,7 +94,8 @@ public struct ClaudeUsageProbe: UsageProbePort {
                 percentRemaining: Double(weeklyPct),
                 quotaType: .weekly,
                 provider: .claude,
-                resetsAt: parseResetDate(weeklyReset)
+                resetsAt: parseResetDate(weeklyReset),
+                resetText: cleanResetText(weeklyReset)
             ))
         }
 
@@ -102,7 +104,8 @@ public struct ClaudeUsageProbe: UsageProbePort {
                 percentRemaining: Double(opusPct),
                 quotaType: .modelSpecific("opus"),
                 provider: .claude,
-                resetsAt: parseResetDate(weeklyReset)
+                resetsAt: parseResetDate(weeklyReset),
+                resetText: cleanResetText(weeklyReset)
             ))
         }
 
@@ -208,6 +211,18 @@ public struct ClaudeUsageProbe: UsageProbePort {
             return nil
         }
         return String(text[r]).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func cleanResetText(_ text: String?) -> String? {
+        guard let text else { return nil }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        // If it doesn't start with "Resets", add it
+        if trimmed.lowercased().hasPrefix("reset") {
+            return trimmed
+        }
+        return "Resets \(trimmed)"
     }
 
     private func parseResetDate(_ text: String?) -> Date? {

@@ -15,18 +15,23 @@ public struct UsageQuota: Sendable, Equatable, Hashable, Comparable {
     /// When this quota will reset (if known)
     public let resetsAt: Date?
 
+    /// Raw reset text from CLI (e.g., "Resets 11am", "Resets Jan 15")
+    public let resetText: String?
+
     // MARK: - Initialization
 
     public init(
         percentRemaining: Double,
         quotaType: QuotaType,
         provider: AIProvider,
-        resetsAt: Date? = nil
+        resetsAt: Date? = nil,
+        resetText: String? = nil
     ) {
         self.percentRemaining = max(0, min(100, percentRemaining))
         self.quotaType = quotaType
         self.provider = provider
         self.resetsAt = resetsAt
+        self.resetText = resetText
     }
 
     // MARK: - Domain Behavior

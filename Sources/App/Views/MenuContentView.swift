@@ -322,9 +322,9 @@ struct MetricCardView: View {
             }
             .frame(height: 4)
 
-            // Reset time
-            if let resetDesc = quota.resetDescription {
-                Text(resetDesc)
+            // Reset time - prefer raw resetText, fallback to computed resetDescription
+            if let resetText = quota.resetText ?? quota.resetDescription {
+                Text(resetText)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
