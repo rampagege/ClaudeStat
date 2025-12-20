@@ -18,7 +18,7 @@ public struct GeminiUsageProbe: UsageProbePort {
     public init(
         homeDirectory: String = NSHomeDirectory(),
         timeout: TimeInterval = 10.0,
-        networkClient: any NetworkClient = URLSessionNetworkClient()
+        networkClient: any NetworkClient = URLSession.shared
     ) {
         self.homeDirectory = homeDirectory
         self.timeout = timeout
