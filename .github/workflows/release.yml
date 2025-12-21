@@ -10,6 +10,11 @@ on:
         description: 'Version to release (e.g., 1.0.0)'
         required: true
         type: string
+      debug:
+        description: 'Enable verbose debug output'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -32,6 +37,14 @@ jobs:
         uses: SwiftyLab/setup-swift@latest
         with:
           swift-version: ${{ env.SWIFT_VERSION }}
+
+      - name: Cache Swift Packages
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
 
       - name: Extract Version
         id: version
@@ -78,6 +91,9 @@ jobs:
           mkdir -p .build/universal
           lipo -create -output .build/universal/$APP_NAME "$ARM64_BIN" "$X86_BIN"
 
+          # Add rpath for embedded frameworks
+          install_name_tool -add_rpath @executable_path/../Frameworks .build/universal/$APP_NAME
+
           echo "Created universal binary:"
           file .build/universal/$APP_NAME
 
@@ -116,45 +132,29 @@ jobs:
           echo "Created app bundle at $APP_BUNDLE"
           ls -la "$CONTENTS"
 
-      - name: Create Entitlements
-        run: |
-          cat > entitlements.plist << 'EOF'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
-              <true/>
-              <key>com.apple.security.cs.disable-library-validation</key>
-              <true/>
-              <key>com.apple.security.automation.apple-events</key>
-              <true/>
-              <key>com.apple.security.network.client</key>
-              <true/>
-          </dict>
-          </plist>
-          EOF
-
       - name: Import Code Signing Certificate
         env:
           P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12 }}
           P12_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          DEBUG: ${{ inputs.debug || false }}
         run: |
           # Decode certificate
           echo "$P12_BASE64" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
 
-          # Debug: Check if file was created and its size
-          echo "=== P12 file info ==="
-          ls -la "$RUNNER_TEMP/certificate.p12"
-          file "$RUNNER_TEMP/certificate.p12"
+          if [ "$DEBUG" = "true" ]; then
+            echo "=== P12 file info ==="
+            ls -la "$RUNNER_TEMP/certificate.p12"
+            file "$RUNNER_TEMP/certificate.p12"
+            echo ""
+            echo "=== P12 contents check ==="
+            openssl pkcs12 -in "$RUNNER_TEMP/certificate.p12" -passin pass:"$P12_PASSWORD" -nokeys 2>&1 | head -20
+          fi
 
-          # Debug: Check what's in the P12 (without showing sensitive data)
-          echo ""
-          echo "=== P12 contents check ==="
-          openssl pkcs12 -in "$RUNNER_TEMP/certificate.p12" -passin pass:"$P12_PASSWORD" -nokeys 2>&1 | head -20 || {
+          # Validate P12 file
+          if ! openssl pkcs12 -in "$RUNNER_TEMP/certificate.p12" -passin pass:"$P12_PASSWORD" -noout 2>/dev/null; then
             echo "ERROR: Failed to read P12 file. Wrong password or corrupted file."
             exit 1
-          }
+          fi
 
           # Create keychain
           KEYCHAIN_PATH="$RUNNER_TEMP/signing.keychain-db"
@@ -165,8 +165,7 @@ jobs:
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
           # Download Apple certificate chain (required for GitHub-hosted runners)
-          echo ""
-          echo "=== Downloading Apple certificate chain ==="
+          echo "Downloading Apple certificate chain..."
           curl -sL -o "$RUNNER_TEMP/AppleRootCA-G2.cer" \
             "https://www.apple.com/certificateauthority/AppleRootCA-G2.cer"
           curl -sL -o "$RUNNER_TEMP/DeveloperIDG2CA.cer" \
@@ -181,8 +180,7 @@ jobs:
           security import "$RUNNER_TEMP/AppleWWDRCAG3.cer" -k "$KEYCHAIN_PATH" -T /usr/bin/codesign 2>&1 || true
 
           # Import user's Developer ID certificate
-          echo ""
-          echo "=== Importing Developer ID certificate ==="
+          echo "Importing Developer ID certificate..."
           security import "$RUNNER_TEMP/certificate.p12" \
             -k "$KEYCHAIN_PATH" \
             -P "$P12_PASSWORD" \
@@ -190,55 +188,46 @@ jobs:
             -T /usr/bin/security \
             -f pkcs12 2>&1
 
-          IMPORT_STATUS=$?
-          echo "Import exit code: $IMPORT_STATUS"
-
           # Add keychain to search list (BEFORE login keychain)
           security list-keychain -d user -s "$KEYCHAIN_PATH" $(security list-keychain -d user | xargs)
 
-          # Debug: Show what's in keychain after import
-          echo ""
-          echo "=== Certificates in keychain ==="
-          security find-certificate -a "$KEYCHAIN_PATH" | grep -E "^keychain:|alis|labl" || echo "No certificates found"
-
-          echo ""
-          echo "=== Private keys in keychain ==="
-          security find-key -a "$KEYCHAIN_PATH" 2>&1 | head -30 || echo "No keys found or error"
-
-          echo ""
-          echo "=== Checking P12 for private key ==="
-          openssl pkcs12 -in "$RUNNER_TEMP/certificate.p12" -passin pass:"$P12_PASSWORD" -nocerts -nodes 2>&1 | grep -c "PRIVATE KEY" || echo "0"
+          if [ "$DEBUG" = "true" ]; then
+            echo ""
+            echo "=== Certificates in keychain ==="
+            security find-certificate -a "$KEYCHAIN_PATH" | grep -E "^keychain:|alis|labl" || echo "No certificates found"
+            echo ""
+            echo "=== Private keys in keychain ==="
+            security find-key -a "$KEYCHAIN_PATH" 2>&1 | head -30 || echo "No keys found or error"
+          fi
 
           # Set partition list (allow codesign access without prompt)
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH" 2>&1 || {
-            echo "Note: set-key-partition-list returned error (may still work)"
-          }
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH" 2>&1 || true
 
           echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> $GITHUB_ENV
-          echo ""
           echo "Certificate import complete"
 
       - name: Set Signing Identity
+        env:
+          DEBUG: ${{ inputs.debug || false }}
         run: |
-          echo "=== All identities in keychain ==="
-          security find-identity -v "$KEYCHAIN_PATH" || true
-
-          echo ""
-          echo "=== Codesigning identities ==="
-          security find-identity -v -p codesigning "$KEYCHAIN_PATH" || true
-
-          echo ""
-          echo "=== System codesigning identities ==="
-          security find-identity -v -p codesigning || true
-
-          echo ""
-          echo "=== Certificate details ==="
-          security find-certificate -a -p "$KEYCHAIN_PATH" | openssl x509 -noout -subject -dates 2>/dev/null || true
+          if [ "$DEBUG" = "true" ]; then
+            echo "=== All identities in keychain ==="
+            security find-identity -v "$KEYCHAIN_PATH" || true
+            echo ""
+            echo "=== Codesigning identities ==="
+            security find-identity -v -p codesigning "$KEYCHAIN_PATH" || true
+            echo ""
+            echo "=== System codesigning identities ==="
+            security find-identity -v -p codesigning || true
+            echo ""
+            echo "=== Certificate details ==="
+            security find-certificate -a -p "$KEYCHAIN_PATH" | openssl x509 -noout -subject -dates 2>/dev/null || true
+          fi
 
           # Use secret if set, otherwise auto-detect
           if [ -n "${{ secrets.APP_IDENTITY }}" ]; then
             IDENTITY="${{ secrets.APP_IDENTITY }}"
-            echo "Using identity from secret: $IDENTITY"
+            echo "Using identity from secret"
           else
             # Try from our keychain first
             IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep "Developer ID" | head -1 | awk -F '"' '{print $2}')
@@ -253,90 +242,17 @@ jobs:
           fi
 
           if [ -z "$IDENTITY" ]; then
-            echo ""
-            echo "=========================================="
             echo "ERROR: No valid codesigning identity found"
-            echo "=========================================="
-            echo ""
-            echo "Possible causes:"
-            echo "1. Certificate is expired"
-            echo "2. Certificate type is not 'Developer ID Application'"
-            echo "3. Private key was not included in .p12"
-            echo ""
-            echo "Check locally with: security find-identity -v -p codesigning"
+            echo "Possible causes: expired cert, wrong cert type, or missing private key"
+            echo "Run with debug=true for more details"
             exit 1
           fi
 
-          echo "Using identity: $IDENTITY"
+          echo "Found signing identity: $IDENTITY"
           echo "SIGNING_IDENTITY=$IDENTITY" >> $GITHUB_ENV
 
       - name: Sign App Bundle
-        run: |
-          APP_BUNDLE="${APP_NAME}.app"
-          SPARKLE_FW="$APP_BUNDLE/Contents/Frameworks/Sparkle.framework"
-
-          # Sign Sparkle framework components if present
-          if [ -d "$SPARKLE_FW" ]; then
-            echo "Signing Sparkle framework components..."
-
-            # Sign ALL executables in the framework (Autoupdate, etc.)
-            find "$SPARKLE_FW" -type f -perm +111 ! -name "*.dylib" | while read exe; do
-              echo "Signing executable: $exe"
-              codesign --force --sign "$SIGNING_IDENTITY" --timestamp --options runtime "$exe"
-            done
-
-            # Sign all dylibs
-            find "$SPARKLE_FW" -name "*.dylib" -type f | while read dylib; do
-              echo "Signing dylib: $dylib"
-              codesign --force --sign "$SIGNING_IDENTITY" --timestamp --options runtime "$dylib"
-            done
-
-            # Sign XPC services
-            find "$SPARKLE_FW" -name "*.xpc" -type d | while read xpc; do
-              echo "Signing XPC: $xpc"
-              codesign --force --sign "$SIGNING_IDENTITY" --timestamp --options runtime "$xpc"
-            done
-
-            # Sign helper apps
-            find "$SPARKLE_FW" -name "*.app" -type d | while read app; do
-              echo "Signing app: $app"
-              codesign --force --sign "$SIGNING_IDENTITY" --timestamp --options runtime "$app"
-            done
-
-            # Sign the framework itself
-            echo "Signing Sparkle framework..."
-            codesign --force --sign "$SIGNING_IDENTITY" --timestamp --options runtime "$SPARKLE_FW"
-          fi
-
-          # Sign main executable with entitlements
-          echo "Signing main executable..."
-          codesign --force --sign "$SIGNING_IDENTITY" \
-            --entitlements entitlements.plist \
-            --timestamp \
-            --options runtime \
-            "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
-
-          # Sign app bundle
-          echo "Signing app bundle..."
-          codesign --force --sign "$SIGNING_IDENTITY" \
-            --entitlements entitlements.plist \
-            --timestamp \
-            --options runtime \
-            "$APP_BUNDLE"
-
-          # Verify signature
-          echo ""
-          echo "Verifying signature..."
-          codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
-
-      - name: Create ZIP for Notarization
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          ZIP_FILE="${APP_NAME}-${VERSION}.zip"
-
-          ditto -c -k --keepParent "${APP_NAME}.app" "$ZIP_FILE"
-
-          echo "ZIP_FILE=$ZIP_FILE" >> $GITHUB_ENV
+        run: ./scripts/sign-app.sh "${APP_NAME}.app" "$SIGNING_IDENTITY" Sources/App/entitlements.plist
 
       - name: Notarize App
         env:
@@ -348,70 +264,11 @@ jobs:
           API_KEY_PATH="$RUNNER_TEMP/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
           echo "$APP_STORE_CONNECT_API_KEY_P8" | base64 --decode > "$API_KEY_PATH"
 
-          echo "Submitting for notarization..."
-
-          # Disable exit on error temporarily to ensure cleanup
-          set +e
-
-          # Submit for notarization
-          xcrun notarytool submit "$ZIP_FILE" \
-            --key "$API_KEY_PATH" \
-            --key-id "$APP_STORE_CONNECT_KEY_ID" \
-            --issuer "$APP_STORE_CONNECT_ISSUER_ID" \
-            --output-format json \
-            --wait \
-            --timeout 30m > notarization-result.json 2>&1
-
-          NOTARIZE_STATUS=$?
-
-          # Re-enable exit on error
-          set -e
-
-          # Show result
-          echo "=== Notarization Result ==="
-          cat notarization-result.json
-
-          # Extract submission ID and status
-          SUBMISSION_ID=$(cat notarization-result.json | grep -o '"id"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | cut -d'"' -f4)
-          STATUS=$(cat notarization-result.json | grep -o '"status"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | cut -d'"' -f4)
-
-          echo "Submission ID: $SUBMISSION_ID"
-          echo "Status: $STATUS"
-
-          # If failed, get the log
-          if [ "$STATUS" != "Accepted" ]; then
-            echo ""
-            echo "=========================================="
-            echo "Notarization FAILED - Fetching detailed log..."
-            echo "=========================================="
-
-            if [ -n "$SUBMISSION_ID" ]; then
-              xcrun notarytool log "$SUBMISSION_ID" \
-                --key "$API_KEY_PATH" \
-                --key-id "$APP_STORE_CONNECT_KEY_ID" \
-                --issuer "$APP_STORE_CONNECT_ISSUER_ID" \
-                notarization-log.json 2>&1 || true
-
-              echo ""
-              echo "=== Detailed Notarization Log ==="
-              cat notarization-log.json 2>/dev/null || echo "Could not fetch log"
-            fi
-
-            # Cleanup
-            rm -f "$API_KEY_PATH"
-            exit 1
-          fi
-
-          echo "Notarization ACCEPTED!"
+          # Run notarization script
+          ./scripts/notarize-app.sh "${APP_NAME}.app" "$API_KEY_PATH" "$APP_STORE_CONNECT_KEY_ID" "$APP_STORE_CONNECT_ISSUER_ID"
 
           # Cleanup API key
           rm -f "$API_KEY_PATH"
-
-          echo "Stapling notarization ticket..."
-          xcrun stapler staple "${APP_NAME}.app"
-
-          echo "Verifying notarization..."
-          xcrun stapler validate "${APP_NAME}.app"
 
       - name: Create Notarized ZIP
         run: |
