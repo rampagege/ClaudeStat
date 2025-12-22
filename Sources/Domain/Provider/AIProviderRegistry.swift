@@ -8,6 +8,9 @@ public final class AIProviderRegistry: @unchecked Sendable {
 
     /// Registered providers (reference types, so no wrapper needed)
     private var _providers: [any AIProvider] = []
+    
+    /// Lock for thread-safe access
+    private let lock = NSLock()
 
     private init() {}
 
@@ -16,14 +19,18 @@ public final class AIProviderRegistry: @unchecked Sendable {
     /// Registers providers with the registry (called at app startup)
     /// - Parameter providers: The providers to register
     public func register(_ providers: [any AIProvider]) {
-        _providers = providers
+        lock.withLock {
+            _providers = providers
+        }
     }
 
     // MARK: - All Providers
 
     /// All registered providers
     public var allProviders: [any AIProvider] {
-        _providers
+        lock.withLock {
+            _providers
+        }
     }
 
     // MARK: - Static Accessors (for convenience)
@@ -49,7 +56,9 @@ public final class AIProviderRegistry: @unchecked Sendable {
     /// - Parameter id: The provider identifier (e.g., "claude", "codex", "gemini")
     /// - Returns: The provider if found, nil otherwise
     public func provider(for id: String) -> (any AIProvider)? {
-        _providers.first { $0.id == id }
+        lock.withLock {
+            _providers.first { $0.id == id }
+        }
     }
 
     /// Static lookup convenience
