@@ -32,9 +32,8 @@ The project follows a clean architecture with hexagonal/ports-and-adapters patte
 ### Layers
 
 - **Domain** (`Sources/Domain/`): Pure business logic with no external dependencies
-  - Models: `AIProvider`, `UsageQuota`, `UsageSnapshot`, `QuotaStatus`, `QuotaType`, `QuotaDuration`
-  - Services: `QuotaMonitor` - actor that coordinates monitoring with `AsyncStream<MonitoringEvent>`
-  - Ports: `UsageProbePort` (with `ProbeError` enum), `QuotaObserverPort` (with `NoOpQuotaObserver`)
+  - Provider (`Provider/`): `AIProvider` protocol, `UsageProbe` protocol, and rich models (`UsageQuota`, `UsageSnapshot`, `QuotaStatus`)
+  - Monitor (`Monitor/`): `QuotaMonitor` actor and `StatusChangeObserver` protocol
 
 - **Infrastructure** (`Sources/Infrastructure/`): Technical implementations
   - CLI (`CLI/`):
@@ -53,16 +52,16 @@ The project follows a clean architecture with hexagonal/ports-and-adapters patte
 
 ### Key Patterns
 
-- **Ports and Adapters**: Domain defines ports (`UsageProbePort`, `QuotaObserverPort`), infrastructure provides adapters
+- **Ports and Adapters**: Domain defines ports (`UsageProbe`, `StatusChangeObserver`), infrastructure provides adapters
 - **Actor-based concurrency**: `QuotaMonitor` is an actor for thread-safe state management
 - **Mockable protocol mocks**: Uses `@Mockable` macro from Mockable package for test doubles
 - **Swift Testing framework**: Tests use `@Test` and `@Suite` attributes, not XCTest
 
 ### Adding a New AI Provider
 
-1. Add case to `AIProvider` enum in `Sources/Domain/Models/AIProvider.swift`
-2. Create probe in `Sources/Infrastructure/CLI/` implementing `UsageProbePort`
-3. Register probe in `ClaudeBarApp.init()`
+1. Create a new provider class implementing `AIProvider` in `Sources/Domain/Provider/`
+2. Create probe in `Sources/Infrastructure/CLI/` implementing `UsageProbe`
+3. Register provider in `ClaudeBarApp.init()`
 4. Add parsing tests in `Tests/InfrastructureTests/CLI/`
 
 ## Dependencies

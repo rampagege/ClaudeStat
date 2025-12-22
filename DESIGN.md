@@ -17,7 +17,7 @@ ClaudeBar is a macOS 15+ menu bar application for monitoring AI coding assistant
 ┌─────────────────────────────────────────────────────────────┐
 │                      Domain Layer                            │
 │  Rich Models: UsageQuota, UsageSnapshot, QuotaStatus         │
-│  Ports: UsageProbePort (ProbeError), QuotaObserverPort       │
+│  Ports: UsageProbe (ProbeError), StatusChangeObserver        │
 │  Services: QuotaMonitor (Actor + AsyncStream<MonitoringEvent>)│
 └─────────────────────────────────────────────────────────────┘
                               │
@@ -36,17 +36,17 @@ ClaudeBar/
 ├── Package.swift
 ├── Sources/
 │   ├── Domain/                    # Pure business logic
-│   │   ├── Models/
-│   │   │   ├── AIProvider.swift   # Provider enum with metadata
-│   │   │   ├── UsageQuota.swift   # Rich quota model
-│   │   │   ├── QuotaType.swift    # Session/Weekly/Model types + QuotaDuration
-│   │   │   ├── QuotaStatus.swift  # Health status with thresholds
-│   │   │   └── UsageSnapshot.swift # Aggregate root
-│   │   ├── Ports/
-│   │   │   ├── UsageProbePort.swift     # @Mockable + ProbeError enum
-│   │   │   └── QuotaObserverPort.swift  # @Mockable + NoOpQuotaObserver
-│   │   └── Services/
-│   │       └── QuotaMonitor.swift # Actor + MonitoringEvent + AsyncStream
+│   │   ├── Monitor/
+│   │   │   ├── QuotaMonitor.swift        # Actor + MonitoringEvent + AsyncStream
+│   │   │   └── StatusChangeObserver.swift # Protocol for status notifications
+│   │   └── Provider/
+│   │       ├── AIProvider.swift          # Protocol + UsageProbe protocol
+│   │       ├── UsageQuota.swift          # Rich quota model
+│   │       ├── QuotaType.swift           # Session/Weekly/Model types
+│   │       ├── QuotaStatus.swift         # Health status with thresholds
+│   │       ├── UsageSnapshot.swift       # Aggregate root
+│   │       ├── ProbeError.swift          # Error types
+│   │       └── ... (Concrete Providers like ClaudeProvider.swift)
 │   │
 │   ├── Infrastructure/            # Technical implementations
 │   │   ├── CLI/
@@ -70,8 +70,8 @@ ClaudeBar/
 │
 └── Tests/
     ├── DomainTests/
-    │   ├── Models/
-    │   └── Services/
+    │   ├── Monitor/
+    │   └── Provider/
     └── InfrastructureTests/
         ├── CLI/
         └── Notifications/
@@ -137,16 +137,13 @@ Domain defines interfaces, infrastructure implements:
 ```swift
 // Domain Port
 @Mockable
-public protocol UsageProbePort: Sendable {
-    var provider: AIProvider { get }
+public protocol UsageProbe: Sendable {
     func probe() async throws -> UsageSnapshot
     func isAvailable() async -> Bool
 }
 
 // Infrastructure Adapter
-public struct ClaudeUsageProbe: UsageProbePort {
-    public let provider: AIProvider = .claude
-
+public struct ClaudeUsageProbe: UsageProbe {
     public func probe() async throws -> UsageSnapshot {
         // Technical implementation with PTY
     }
@@ -159,11 +156,18 @@ Domain services use Swift actors for thread safety:
 
 ```swift
 public actor QuotaMonitor {
-    private let probes: [any UsageProbePort]
-    private var snapshots: [AIProvider: UsageSnapshot] = [:]
+    private let providers: [any AIProvider]
+    private var previousStatuses: [String: QuotaStatus] = [:]
 
-    public func refreshAll() async throws -> [AIProvider: UsageSnapshot] {
+    public func refreshAll() async {
         // Concurrent refresh with structured concurrency
+        await withTaskGroup(of: Void.self) { group in
+            for provider in providers {
+                group.addTask {
+                    await self.refreshProvider(provider)
+                }
+            }
+        }
     }
 }
 ```
@@ -193,16 +197,21 @@ All tests follow this pattern:
 @Test
 func `monitor notifies observer when status changes`() async throws {
     // Given - Setup
-    let mockProbe = MockUsageProbePort()
-    let mockObserver = MockQuotaObserverPort()
-    given(mockProbe).provider.willReturn(.claude)
-    ...
+    let mockProbe = MockUsageProbe()
+    let mockObserver = MockStatusChangeObserver()
+    
+    // Setup mock probe
+    given(mockProbe).probe().willReturn(UsageSnapshot(...))
+    given(mockProbe).isAvailable().willReturn(true)
+    
+    let provider = ClaudeProvider(probe: mockProbe)
+    let monitor = QuotaMonitor(providers: [provider], statusObserver: mockObserver)
 
     // When - Action
-    _ = try await monitor.refreshAll()
+    await monitor.refreshAll()
 
     // Then - Assertion
-    verify(mockObserver).onStatusChanged(...).called(.once)
+    verify(mockObserver).onStatusChanged(providerId: .any, oldStatus: .any, newStatus: .any).called(.once)
 }
 ```
 
@@ -212,12 +221,12 @@ Use `@Mockable` for all ports:
 
 ```swift
 @Mockable
-public protocol UsageProbePort: Sendable {
+public protocol UsageProbe: Sendable {
     // ...
 }
 
 // In tests:
-let mockProbe = MockUsageProbePort()
+let mockProbe = MockUsageProbe()
 given(mockProbe).probe().willReturn(snapshot)
 verify(mockProbe).probe().called(.once)
 ```

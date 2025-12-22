@@ -103,7 +103,7 @@ ClaudeBar follows Clean Architecture with hexagonal/ports-and-adapters patterns:
 ┌─────────────────────────────────────────────────┐
 │                 Domain Layer                    │
 │  Models: UsageQuota, UsageSnapshot, QuotaStatus │
-│  Ports: UsageProbePort, QuotaObserverPort       │
+│  Ports: UsageProbe, StatusChangeObserver        │
 │  Services: QuotaMonitor (Actor)                 │
 └─────────────────────────────────────────────────┘
                         │
