@@ -61,7 +61,6 @@ let package = Package(
                 "AppIcon.icns",
             ],
             resources: [
-                .process("Assets.xcassets"),
                 .process("Resources"),
             ],
             swiftSettings: [
