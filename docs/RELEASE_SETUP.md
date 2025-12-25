@@ -175,9 +175,47 @@ Your repository secrets should look like:
 
 ## Part 4: Create a Release
 
-Once all secrets are configured:
+Once all secrets are configured, follow this workflow to create a release.
 
-### Option A: Tag-based Release
+### Step 1: Write Release Notes in CHANGELOG.md
+
+Before creating a release, update `CHANGELOG.md` with the changes for this version:
+
+```markdown
+## [Unreleased]
+
+## [1.0.0] - 2025-12-25
+
+### Added
+- New feature X that does Y
+- Better quota visualization
+
+### Changed
+- Improved performance of quota refresh
+
+### Fixed
+- Memory leak when switching providers
+```
+
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/):
+- `### Added` - New features
+- `### Changed` - Changes to existing functionality
+- `### Deprecated` - Features to be removed
+- `### Removed` - Removed features
+- `### Fixed` - Bug fixes
+- `### Security` - Security fixes
+
+### Step 2: Commit the Changelog
+
+```bash
+git add CHANGELOG.md
+git commit -m "docs: add release notes for v1.0.0"
+git push origin main
+```
+
+### Step 3: Create and Push the Tag
+
+**Option A: Tag-based Release**
 
 ```bash
 # Stable release
@@ -193,12 +231,31 @@ git tag v2.0.0-alpha.1
 git tag v2.0.0-rc.1
 ```
 
-### Option B: Manual Release (workflow_dispatch)
+**Option B: Manual Release (workflow_dispatch)**
 
 1. Go to **Actions** → **Release** workflow
 2. Click **Run workflow**
 3. Enter the version (e.g., `1.0.0` or `1.0.0-beta.1`)
 4. Click **Run workflow**
+
+### How Release Notes Flow
+
+```
+CHANGELOG.md (you write here)
+       │
+       ▼
+extract-changelog.sh (extracts version section)
+       │
+       ├──────────────────┬──────────────────┐
+       ▼                  ▼                  ▼
+GitHub Release     appcast.xml        In-app updates
+(What's New)       (Sparkle feed)     (shown to users)
+```
+
+The CI pipeline automatically:
+1. Extracts release notes for your version from `CHANGELOG.md`
+2. Includes them in the GitHub Release under "What's New"
+3. Includes them in `appcast.xml` for Sparkle auto-updates
 
 ### Supported Version Formats
 
@@ -212,12 +269,16 @@ git tag v2.0.0-rc.1
 
 Pre-releases are automatically flagged on GitHub and won't appear as the "latest" release.
 
+### What the CI Does
+
 The GitHub Actions workflow will automatically:
 1. Build the app for Intel and Apple Silicon
 2. Sign with your Developer ID certificate
 3. Notarize with Apple
-4. Create a GitHub release with DMG and ZIP
-5. Mark as pre-release if version contains `-`
+4. Extract release notes from CHANGELOG.md
+5. Create a GitHub release with DMG and ZIP
+6. Update appcast.xml for Sparkle auto-updates
+7. Mark as pre-release if version contains `-`
 
 ---
 
@@ -277,7 +338,27 @@ Check that:
 
 ## Quick Reference
 
-### Commands Cheat Sheet
+### Release Workflow Cheat Sheet
+
+```bash
+# 1. Update CHANGELOG.md with release notes (use your editor)
+
+# 2. Preview what will be extracted for a version
+./scripts/extract-changelog.sh 1.0.0
+
+# 3. Commit changelog and create release
+git add CHANGELOG.md
+git commit -m "docs: add release notes for v1.0.0"
+git push origin main
+
+# 4. Create and push the tag
+git tag v1.0.0 && git push origin v1.0.0
+
+# Create a beta release
+git tag v1.0.0-beta.1 && git push origin v1.0.0-beta.1
+```
+
+### Certificate Commands
 
 ```bash
 # Base64 encode certificate
@@ -294,12 +375,6 @@ base64 -i AuthKey_XXXX.p8 | tr -d '\n' | pbcopy
 
 # Check local signing identities
 security find-identity -v -p codesigning
-
-# Create a stable release
-git tag v1.0.0 && git push origin v1.0.0
-
-# Create a beta release
-git tag v1.0.0-beta.1 && git push origin v1.0.0-beta.1
 ```
 
 ### Links
