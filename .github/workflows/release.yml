@@ -319,6 +319,29 @@ jobs:
 
           echo "NOTARIZED_ZIP=$NOTARIZED_ZIP" >> $GITHUB_ENV
 
+      - name: Extract Release Notes from CHANGELOG
+        id: changelog
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # Extract release notes from CHANGELOG.md
+          if [ -f "CHANGELOG.md" ]; then
+            NOTES=$(./scripts/extract-changelog.sh "$VERSION" 2>/dev/null || echo "")
+          fi
+
+          # Fallback if no notes found
+          if [ -z "$NOTES" ]; then
+            NOTES="Bug fixes and improvements."
+            echo "::warning::No changelog entry found for v$VERSION, using default message"
+          fi
+
+          # Store in environment file for multiline support
+          echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
+          echo "$NOTES" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+          echo "Release notes extracted for v$VERSION"
+
       - name: Create DMG
         run: |
           brew install create-dmg
@@ -361,16 +384,19 @@ jobs:
           name: ClaudeBar v${{ steps.version.outputs.version }}
           draft: false
           prerelease: ${{ steps.version.outputs.is_prerelease }}
-          generate_release_notes: true
           files: |
             ${{ env.NOTARIZED_ZIP }}
             ${{ env.NOTARIZED_ZIP }}.sha256
             ${{ env.DMG_FILE }}
             ${{ env.DMG_FILE }}.sha256
           body: |
-            ## ClaudeBar v${{ steps.version.outputs.version }}
+            ## What's New
 
-            ### Installation
+            ${{ env.RELEASE_NOTES }}
+
+            ---
+
+            ## Installation
 
             **Option 1: DMG (Recommended)**
             1. Download `${{ env.DMG_FILE }}`
@@ -382,7 +408,7 @@ jobs:
             2. Unzip and move ClaudeBar.app to Applications
             3. Launch from Applications folder
 
-            ### Verification
+            ## Verification
 
             SHA256 checksums are provided. Verify with:
             ```bash
@@ -430,10 +456,9 @@ jobs:
 
           echo "EdDSA signature generated successfully"
 
-          # Generate/update appcast.xml (append new version, preserve history)
-          # Use the same build number from Info.plist (GitHub release count)
+          # Generate/update appcast.xml using RELEASE_NOTES from CHANGELOG.md
           echo "Build number: $BUILD_NUMBER"
-          ./scripts/update-appcast.sh "$VERSION" "$BUILD_NUMBER" "$DOWNLOAD_URL" "$ED_SIGNATURE" "$FILE_SIZE"
+          ./scripts/update-appcast.sh "$VERSION" "$BUILD_NUMBER" "$DOWNLOAD_URL" "$ED_SIGNATURE" "$FILE_SIZE" "$RELEASE_NOTES"
 
       - name: Setup Pages
         if: ${{ (github.event_name == 'workflow_dispatch' && inputs.publish_appcast) || (github.event_name == 'push' && steps.version.outputs.is_prerelease == 'false') }}
