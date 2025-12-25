@@ -460,17 +460,17 @@ jobs:
           cat docs/appcast.xml
 
       - name: Setup Pages
-        if: ${{ steps.version.outputs.is_prerelease == 'false' }}
+        if: ${{ (github.event_name == 'workflow_dispatch' && inputs.publish_appcast) || (github.event_name == 'push' && steps.version.outputs.is_prerelease == 'false') }}
         uses: actions/configure-pages@v4
 
       - name: Upload appcast to Pages
-        if: ${{ steps.version.outputs.is_prerelease == 'false' }}
+        if: ${{ (github.event_name == 'workflow_dispatch' && inputs.publish_appcast) || (github.event_name == 'push' && steps.version.outputs.is_prerelease == 'false') }}
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs
 
       - name: Deploy to GitHub Pages
-        if: ${{ steps.version.outputs.is_prerelease == 'false' }}
+        if: ${{ (github.event_name == 'workflow_dispatch' && inputs.publish_appcast) || (github.event_name == 'push' && steps.version.outputs.is_prerelease == 'false') }}
         id: deployment
         uses: actions/deploy-pages@v4
 
