@@ -7,9 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-- Sparkle checks for updates when menu opens (instead of automatic background checks)
-- Improved release notes HTML formatting in update dialog
+## [0.2.1] - 2025-12-26
+
+### Added
+- **Auto-Update Toggle**: Control automatic update checks from Settings
+- **Update Progress Indicator**: See visual feedback when checking for updates
+
+### Improved
+- **Smarter Update Checks**: Updates are now checked when you open the menu, giving you control instead of running in the background
+- **Cleaner Update Dialog**: Release notes now display with better formatting
+- **More Reliable CLI Interaction**: Better handling of CLI prompts and improved timeout for quota fetching
 
 ## [0.2.0] - 2025-12-25
 
@@ -34,10 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Menu bar interface with quota display
 - Automatic refresh every 5 minutes
 
-[Unreleased]: https://github.com/tddworks/ClaudeBar/compare/v0.2.4...HEAD
-[0.2.4]: https://github.com/tddworks/ClaudeBar/compare/v0.2.3...v0.2.4
-[0.2.3]: https://github.com/tddworks/ClaudeBar/compare/v0.2.2...v0.2.3
-[0.2.2]: https://github.com/tddworks/ClaudeBar/compare/v0.2.1...v0.2.2
+[Unreleased]: https://github.com/tddworks/ClaudeBar/compare/v0.2.1...HEAD
 [0.2.1]: https://github.com/tddworks/ClaudeBar/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/tddworks/ClaudeBar/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/tddworks/ClaudeBar/releases/tag/v0.1.0
