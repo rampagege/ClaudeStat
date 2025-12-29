@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.7] - 2025-12-29
+
+### Fixed
+- **Antigravity Quota Parsing**: Fixed issue where models with only reset time but no remaining fraction (like "Gemini 3 Flash") were incorrectly excluded from quota display. Missing `remainingFraction` now correctly indicates 0% remaining.
+
 ## [0.2.6] - 2025-12-29
 
 ### Improved
@@ -112,7 +117,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Menu bar interface with quota display
 - Automatic refresh every 5 minutes
 
-[Unreleased]: https://github.com/tddworks/ClaudeBar/compare/v0.2.5...HEAD
+[Unreleased]: https://github.com/tddworks/ClaudeBar/compare/v0.2.7...HEAD
+[0.2.7]: https://github.com/tddworks/ClaudeBar/compare/v0.2.6...v0.2.7
+[0.2.6]: https://github.com/tddworks/ClaudeBar/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/tddworks/ClaudeBar/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/tddworks/ClaudeBar/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/tddworks/ClaudeBar/compare/v0.2.2...v0.2.3

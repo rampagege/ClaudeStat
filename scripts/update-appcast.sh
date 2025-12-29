@@ -23,6 +23,17 @@ mkdir -p docs
 
 APPCAST_FILE="docs/appcast.xml"
 
+# Filter out Technical section (developer-focused, not for end users)
+# Removes everything from "### Technical" to the next section or end
+# Also converts **bold** to plain text for cleaner user display
+filter_for_users() {
+    awk '
+        /^### Technical/ { skip=1; next }
+        /^### / { skip=0 }
+        skip == 0 { print }
+    ' | sed 's/\*\*\([^*]*\)\*\*/\1/g'
+}
+
 # Convert markdown to clean HTML for Sparkle
 # Process line by line for proper list handling
 convert_to_html() {
@@ -72,7 +83,8 @@ convert_to_html() {
     echo "$result"
 }
 
-HTML_NOTES=$(echo "$RELEASE_NOTES" | convert_to_html)
+# Filter out Technical section, then convert to HTML
+HTML_NOTES=$(echo "$RELEASE_NOTES" | filter_for_users | convert_to_html)
 
 # Human-readable date for display
 DISPLAY_DATE=$(date "+%B %d, %Y")
