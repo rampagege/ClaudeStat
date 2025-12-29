@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.6] - 2025-12-29
+
+### Improved
+- **Cleaner Menu Layout**: Replaced scroll view with dynamic height layout for a smoother, more native menu bar experience
+- **Smarter Quota Alerts**: Improved notification timing - alerts now request permission after the app fully launches, fixing issues on menu bar apps
+- **Better Alert Messages**: Clearer, more actionable quota alert messages when your usage is running low
+
+### Fixed
+- **Notification Permission**: Fixed issue where notification permission requests were being denied on first launch
+
+### Technical
+- Refactored notification system with cleaner domain naming (`QuotaAlerter`, `QuotaStatusListener`)
+- Merged notification infrastructure into single `QuotaAlerter` class for simpler architecture
+- Added detailed authorization status logging for easier troubleshooting
+
 ## [0.2.5] - 2025-12-29
 
 ### Added
