@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.4] - 2025-12-29
+
+### Added
+- **Dual-Output Logging**: Logs now write to both OSLog (for developers via Console.app) and persistent files (for users) at `~/Library/Logs/ClaudeBar/ClaudeBar.log`
+- **Open Logs Button**: New "Open Logs Folder" button in Settings for easy access to log files when troubleshooting
+- **Comprehensive Error Logging**: All AI provider probes now log detailed error information for easier debugging
+
+### Improved
+- **Better Troubleshooting**: Users can now share log files when reporting issues, making it easier to diagnose problems
+- **Automatic Log Rotation**: Log files automatically rotate at 5MB to prevent disk space issues
+- **Thread-Safe Logging**: File logging is designed for safe concurrent access
+
+### Technical
+- Added `FileLogger` with automatic directory creation and 5MB rotation
+- Created `AppLog` facade that unifies OSLog and file output
+- Debug level logs go to OSLog only; info/warning/error go to both outputs
+- Added unit tests for ANSI stripping in log content
+
 ## [0.2.3] - 2025-12-28
 
 ### Added
@@ -61,7 +79,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Menu bar interface with quota display
 - Automatic refresh every 5 minutes
 
-[Unreleased]: https://github.com/tddworks/ClaudeBar/compare/v0.2.3...HEAD
+[Unreleased]: https://github.com/tddworks/ClaudeBar/compare/v0.2.4...HEAD
+[0.2.4]: https://github.com/tddworks/ClaudeBar/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/tddworks/ClaudeBar/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/tddworks/ClaudeBar/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/tddworks/ClaudeBar/compare/v0.2.0...v0.2.1
