@@ -162,7 +162,7 @@ struct QuotaMonitorTests {
         let monitor = QuotaMonitor(providers: [provider])
 
         // When
-        let found = await monitor.provider(for: "claude")
+        let found = monitor.provider(for: "claude")
 
         // Then
         #expect(found?.id == "claude")
@@ -174,7 +174,7 @@ struct QuotaMonitorTests {
         let monitor = QuotaMonitor(providers: [])
 
         // When
-        let found = await monitor.provider(for: "unknown")
+        let found = monitor.provider(for: "unknown")
 
         // Then
         #expect(found == nil)
@@ -208,7 +208,7 @@ struct QuotaMonitorTests {
         await monitor.refreshAll()
 
         // When
-        let overallStatus = await monitor.overallStatus()
+        let overallStatus = monitor.overallStatus
 
         // Then - worst status (critical) wins
         #expect(overallStatus == .critical)
@@ -230,7 +230,7 @@ struct QuotaMonitorTests {
         let monitor = QuotaMonitor(providers: [provider])
 
         // When
-        let stream = await monitor.startMonitoring(interval: .milliseconds(100))
+        let stream = monitor.startMonitoring(interval: .milliseconds(100))
         var events: [MonitoringEvent] = []
 
         // Collect first 2 events
@@ -238,7 +238,7 @@ struct QuotaMonitorTests {
             events.append(event)
         }
 
-        await monitor.stopMonitoring()
+        monitor.stopMonitoring()
 
         // Then
         #expect(events.count == 2)
@@ -262,8 +262,8 @@ struct QuotaMonitorTests {
         let monitor = QuotaMonitor(providers: [provider])
 
         // When
-        let stream = await monitor.startMonitoring(interval: .milliseconds(50))
-        await monitor.stopMonitoring()
+        let stream = monitor.startMonitoring(interval: .milliseconds(50))
+        monitor.stopMonitoring()
 
         var eventCount = 0
         for await _ in stream {
