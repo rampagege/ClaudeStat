@@ -123,8 +123,8 @@ import Domain
     .background(AppTheme.backgroundGradient(for: .dark))
 }
 
-#Preview("Stat Cards - Z.ai Demo") {
-    // Z.ai demo mode quotas (matching ZaiDemoUsageProbe data)
+#Preview("Stat Cards - Z.ai") {
+    // Z.ai quotas showing session and time limit (MCP) usage
     let quotas = [
         UsageQuota(percentRemaining: 35, quotaType: .session, providerId: "zai"),
         UsageQuota(percentRemaining: 70, quotaType: .timeLimit("MCP"), providerId: "zai"),
