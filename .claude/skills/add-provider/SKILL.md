@@ -187,12 +187,20 @@ var providers: [any AIProvider] = [
 ]
 ```
 
-Add static accessor to `Sources/Domain/Provider/AIProviderRegistry.swift`:
+Add visual identity in `Sources/App/Views/Theme.swift`:
 
 ```swift
-public static var {providerId}: (any AIProvider)? {
-    shared.provider(for: "{provider-id}")
-}
+// In AppTheme.providerColor(for:scheme:)
+case "{provider-id}": return /* your color */
+
+// In AppTheme.providerName(for:)
+case "{provider-id}": return "{Provider Name}"
+
+// In AppTheme.providerSymbolIcon(for:)
+case "{provider-id}": return "/* SF Symbol name */"
+
+// In AppTheme.providerIconAssetName(for:)
+case "{provider-id}": return "{Provider}Icon"
 ```
 
 ## Domain Model Mapping
@@ -240,8 +248,7 @@ See [references/provider-icon-guide.md](references/provider-icon-guide.md) for c
 - [ ] Probe implementation complete
 - [ ] Provider class created
 - [ ] Provider registered in ClaudeBarApp
-- [ ] Static accessor added to AIProviderRegistry
+- [ ] Visual identity added to Theme.swift (color, name, icons)
 - [ ] Provider icon SVG created with rounded rect background
 - [ ] Icon PNGs generated (64, 128, 192px)
-- [ ] ProviderVisualIdentity extension added
 - [ ] All 300+ existing tests still pass

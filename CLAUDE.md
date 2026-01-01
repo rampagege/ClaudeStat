@@ -57,7 +57,7 @@ The project follows a layered architecture with `QuotaMonitor` as the single sou
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         DOMAIN LAYER                                 │
 │                                                                      │
-│  QuotaMonitor (actor) - Single Source of Truth                      │
+│  QuotaMonitor (@Observable) - Single Source of Truth                │
 │  ├── providers: AIProviders (private repository)                    │
 │  ├── Delegation: allProviders, enabledProviders, provider(for:)     │
 │  ├── Selection: selectedProviderId, selectedProvider                │
@@ -90,7 +90,7 @@ The project follows a layered architecture with `QuotaMonitor` as the single sou
     - `AIProvider` protocol - rich domain model with `isEnabled` state
     - `AIProviders` - repository for provider collection management
     - `UsageProbe` protocol, rich models (`UsageQuota`, `UsageSnapshot`, `QuotaStatus`)
-  - Monitor (`Monitor/`): `QuotaMonitor` actor (single source of truth) and `QuotaStatusListener` protocol
+  - Monitor (`Monitor/`): `QuotaMonitor` @Observable class (single source of truth) and `QuotaStatusListener` protocol
 
 - **Infrastructure** (`Sources/Infrastructure/`): Technical implementations
   - CLI (`CLI/`): Probes and protocols for CLI interaction
@@ -119,7 +119,7 @@ The project follows a layered architecture with `QuotaMonitor` as the single sou
 ### Key Patterns
 
 - **Protocol-Based DI**: Domain defines protocols (`UsageProbe`, `QuotaStatusListener`), infrastructure provides implementations
-- **Actor-based concurrency**: `QuotaMonitor` is an actor for thread-safe state management
+- **@Observable pattern**: `QuotaMonitor` and `AIProviders` use `@Observable` for SwiftUI reactivity
 - **Mockable protocol mocks**: Uses `@Mockable` macro from Mockable package for test doubles
 - **Swift Testing framework**: Tests use `@Test` and `@Suite` attributes, not XCTest
 - **Adapters folder**: Pure 3rd-party wrappers excluded from code coverage

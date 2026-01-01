@@ -9,16 +9,17 @@ ClaudeBar is a macOS 15+ menu bar application for monitoring AI coding assistant
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                        App Layer                             │
-│  SwiftUI Views + @Observable AppState + StatusBarIcon        │
-│  (No ViewModels - rich domain models handle logic)           │
+│  SwiftUI Views consume QuotaMonitor directly + StatusBarIcon │
+│  (No ViewModels, no AppState - rich domain models)           │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                      Domain Layer                            │
 │  Rich Models: UsageQuota, UsageSnapshot, QuotaStatus         │
-│  Ports: UsageProbe (ProbeError), StatusChangeObserver        │
-│  Services: QuotaMonitor (Actor + AsyncStream<MonitoringEvent>)│
+│  Ports: UsageProbe (ProbeError), QuotaStatusListener         │
+│  Services: QuotaMonitor (@Observable + AsyncStream)          │
+│  Repository: AIProviders (manages provider collection)       │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -69,7 +70,7 @@ ClaudeBar/
 │   │       └── NotificationQuotaObserver.swift # macOS notifications
 │   │
 │   └── App/                       # SwiftUI application
-│       ├── ClaudeBarApp.swift     # Entry point + AppState
+│       ├── ClaudeBarApp.swift     # Entry point + QuotaMonitor
 │       └── Views/
 │           ├── MenuContentView.swift
 │           ├── ProviderSectionView.swift
@@ -158,22 +159,24 @@ public struct ClaudeUsageProbe: UsageProbe {
 }
 ```
 
-### 5. Actor-Based Services
+### 5. @Observable Services with Repository
 
-Domain services use Swift actors for thread safety:
+Domain services use `@Observable` for SwiftUI reactivity with `AIProviders` repository:
 
 ```swift
-public actor QuotaMonitor {
-    private let providers: [any AIProvider]
-    private var previousStatuses: [String: QuotaStatus] = [:]
+@Observable
+public final class QuotaMonitor: @unchecked Sendable {
+    private let providers: AIProviders  // Repository
+    public var selectedProviderId: String = "claude"
+
+    public var overallStatus: QuotaStatus {
+        providers.enabled.compactMap(\.snapshot?.overallStatus).max() ?? .healthy
+    }
 
     public func refreshAll() async {
-        // Concurrent refresh with structured concurrency
         await withTaskGroup(of: Void.self) { group in
-            for provider in providers {
-                group.addTask {
-                    await self.refreshProvider(provider)
-                }
+            for provider in providers.enabled {
+                group.addTask { await self.refreshProvider(provider) }
             }
         }
     }
@@ -239,18 +242,6 @@ given(mockProbe).probe().willReturn(snapshot)
 verify(mockProbe).probe().called(.once)
 ```
 
-### Singleton Isolation
-
-When testing components that interact with the global `AIProviderRegistry`, ensure you reset it at the start of the test to prevent state leakage between tests running in parallel:
-
-```swift
-@Test
-func `test registry interaction`() {
-    AIProviderRegistry.shared.reset()
-    // ...
-}
-```
-
 ## Status Thresholds
 
 Business rules encoded in domain:
@@ -275,10 +266,11 @@ Business rules encoded in domain:
 
 ## Implemented Features
 
-1. **Multi-provider support** - Claude, Codex, and Gemini probes implemented
+1. **Multi-provider support** - Claude, Codex, Gemini, Copilot, Antigravity, Z.ai probes
 2. **Auto-refresh** - `startMonitoring(interval:)` returns `AsyncStream<MonitoringEvent>`
-3. **System notifications** - `NotificationQuotaObserver` alerts on status degradation
-4. **Shared app state** - `@Observable AppState` for reactive UI updates
+3. **System notifications** - `QuotaAlerter` alerts on status degradation
+4. **Enable/disable providers** - Each provider has `isEnabled` state persisted to UserDefaults
+5. **Provider selection** - UI can select and display individual provider quotas
 
 ## Next Steps
 
