@@ -1,7 +1,7 @@
 ---
 name: fix-bug
 description: |
-  Guide for fixing bugs in ClaudeBar following TDD and rich domain design. Use this skill when:
+  Guide for fixing bugs in ClaudeBar following Chicago School TDD and rich domain design. Use this skill when:
   (1) User reports a bug or unexpected behavior
   (2) Fixing a defect in existing functionality
   (3) User asks "fix this bug" or "this doesn't work correctly"
@@ -10,7 +10,7 @@ description: |
 
 # Fix Bug in ClaudeBar
 
-Fix bugs using TDD, root cause analysis, and domain-driven design.
+Fix bugs using Chicago School TDD, root cause analysis, and rich domain design.
 
 ## Workflow
 
@@ -73,7 +73,15 @@ Check if the bug violates domain invariants that should be maintained:
 
 ## Phase 2: Write Failing Test (Red)
 
-### Test Pattern (Chicago School)
+### Chicago School TDD
+
+We follow **Chicago School TDD** (state-based testing):
+- Test **state changes** and **return values**, not interactions
+- Focus on the "what" (observable outcomes), not the "how" (method calls)
+- Mocks stub dependencies to return data, not to verify calls
+- No `verify()` calls - assert on resulting state instead
+
+### Test Pattern
 
 Test the CORRECT behavior, not the bug:
 
