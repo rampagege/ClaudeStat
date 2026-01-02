@@ -3,17 +3,12 @@ import Foundation
 import Mockable
 @testable import Domain
 
-@Suite(.serialized)
+@Suite
 struct AIProviderProtocolTests {
 
-    // Clear UserDefaults for provider enabled keys before each test
+    // Reset the shared settings store before each test
     init() {
-        UserDefaults.standard.removeObject(forKey: "provider.claude.isEnabled")
-        UserDefaults.standard.removeObject(forKey: "provider.codex.isEnabled")
-        UserDefaults.standard.removeObject(forKey: "provider.gemini.isEnabled")
-        UserDefaults.standard.removeObject(forKey: "provider.copilot.isEnabled")
-        UserDefaults.standard.removeObject(forKey: "provider.antigravity.isEnabled")
-        UserDefaults.standard.removeObject(forKey: "provider.zai.isEnabled")
+        DefaultProviderSettingsStore.shared = InMemoryProviderSettingsStore()
     }
 
     // MARK: - Protocol Conformance

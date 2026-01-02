@@ -2,18 +2,18 @@ import Testing
 import Foundation
 import Mockable
 @testable import Domain
+@testable import Infrastructure
 
-@Suite(.serialized)
+@Suite
 struct QuotaMonitorTests {
 
-    // Clear UserDefaults for provider enabled keys before each test
-    init() {
-        UserDefaults.standard.removeObject(forKey: "provider.claude.isEnabled")
-        UserDefaults.standard.removeObject(forKey: "provider.codex.isEnabled")
-        UserDefaults.standard.removeObject(forKey: "provider.gemini.isEnabled")
-        UserDefaults.standard.removeObject(forKey: "provider.copilot.isEnabled")
-        UserDefaults.standard.removeObject(forKey: "provider.antigravity.isEnabled")
-        UserDefaults.standard.removeObject(forKey: "provider.zai.isEnabled")
+    /// Creates a mock settings repository that returns true for all providers
+    private func makeSettingsRepository() -> MockProviderSettingsRepository {
+        let mock = MockProviderSettingsRepository()
+        given(mock).isEnabled(forProvider: .any, defaultValue: .any).willReturn(true)
+        given(mock).isEnabled(forProvider: .any).willReturn(true)
+        given(mock).setEnabled(.any, forProvider: .any).willReturn()
+        return mock
     }
 
     // MARK: - Single Provider Monitoring

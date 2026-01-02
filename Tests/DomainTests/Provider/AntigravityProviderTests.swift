@@ -3,12 +3,12 @@ import Foundation
 import Mockable
 @testable import Domain
 
-@Suite("AntigravityProvider Tests", .serialized)
+@Suite("AntigravityProvider Tests")
 struct AntigravityProviderTests {
 
-    // Clear UserDefaults for provider enabled keys before each test
+    // Reset the shared settings store before each test
     init() {
-        UserDefaults.standard.removeObject(forKey: "provider.antigravity.isEnabled")
+        DefaultProviderSettingsStore.shared = InMemoryProviderSettingsStore()
     }
 
     // MARK: - Identity Tests

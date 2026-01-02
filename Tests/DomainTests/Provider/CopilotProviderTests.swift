@@ -3,12 +3,12 @@ import Foundation
 import Mockable
 @testable import Domain
 
-@Suite("CopilotProvider Tests", .serialized)
+@Suite("CopilotProvider Tests")
 struct CopilotProviderTests {
 
-    // Clear UserDefaults for provider enabled keys before each test
+    // Reset the shared settings store before each test
     init() {
-        UserDefaults.standard.removeObject(forKey: "provider.copilot.isEnabled")
+        DefaultProviderSettingsStore.shared = InMemoryProviderSettingsStore()
     }
 
     // MARK: - Identity Tests

@@ -19,13 +19,10 @@ public final class CodexProvider: AIProvider, @unchecked Sendable {
         URL(string: "https://status.openai.com")
     }
 
-    /// UserDefaults key for persisting isEnabled state
-    private static let isEnabledKey = "provider.codex.isEnabled"
-
-    /// Whether the provider is enabled (persisted to UserDefaults, defaults to true)
+    /// Whether the provider is enabled (persisted via settingsRepository)
     public var isEnabled: Bool {
         didSet {
-            UserDefaults.standard.set(isEnabled, forKey: Self.isEnabledKey)
+            settingsRepository.setEnabled(isEnabled, forProvider: id)
         }
     }
 
@@ -38,13 +35,14 @@ public final class CodexProvider: AIProvider, @unchecked Sendable {
     // MARK: - Internal
 
     private let probe: any UsageProbe
+    private let settingsRepository: any ProviderSettingsRepository
 
     // MARK: - Initialization
 
-    public init(probe: any UsageProbe) {
+    public init(probe: any UsageProbe, settingsRepository: any ProviderSettingsRepository) {
         self.probe = probe
-        // Load persisted enabled state (defaults to true)
-        self.isEnabled = UserDefaults.standard.object(forKey: Self.isEnabledKey) as? Bool ?? true
+        self.settingsRepository = settingsRepository
+        self.isEnabled = settingsRepository.isEnabled(forProvider: "codex")
     }
 
     // MARK: - AIProvider Protocol

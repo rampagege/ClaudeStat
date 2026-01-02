@@ -2,18 +2,14 @@ import Testing
 import Foundation
 import Mockable
 @testable import Domain
+@testable import Infrastructure
 
-@Suite(.serialized)
+@Suite
 struct AIProvidersTests {
 
-    // Clear UserDefaults for provider enabled keys before each test
+    // Reset the shared settings store before each test
     init() {
-        UserDefaults.standard.removeObject(forKey: "provider.claude.isEnabled")
-        UserDefaults.standard.removeObject(forKey: "provider.codex.isEnabled")
-        UserDefaults.standard.removeObject(forKey: "provider.gemini.isEnabled")
-        UserDefaults.standard.removeObject(forKey: "provider.copilot.isEnabled")
-        UserDefaults.standard.removeObject(forKey: "provider.antigravity.isEnabled")
-        UserDefaults.standard.removeObject(forKey: "provider.zai.isEnabled")
+        DefaultProviderSettingsStore.shared = InMemoryProviderSettingsStore()
     }
 
     // MARK: - All Providers

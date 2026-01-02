@@ -20,13 +20,10 @@ public final class CopilotProvider: AIProvider, @unchecked Sendable {
         URL(string: "https://www.githubstatus.com")
     }
 
-    /// UserDefaults key for persisting isEnabled state
-    private static let isEnabledKey = "provider.copilot.isEnabled"
-
-    /// Whether the provider is enabled (persisted to UserDefaults, defaults to false - requires setup)
+    /// Whether the provider is enabled (persisted via settingsRepository, defaults to false - requires setup)
     public var isEnabled: Bool {
         didSet {
-            UserDefaults.standard.set(isEnabled, forKey: Self.isEnabledKey)
+            settingsRepository.setEnabled(isEnabled, forProvider: id)
         }
     }
 
@@ -45,15 +42,18 @@ public final class CopilotProvider: AIProvider, @unchecked Sendable {
 
     /// The probe used to fetch usage data
     private let probe: any UsageProbe
+    private let settingsRepository: any ProviderSettingsRepository
 
     // MARK: - Initialization
 
     /// Creates a Copilot provider with the specified probe
     /// - Parameter probe: The probe to use for fetching usage data
-    public init(probe: any UsageProbe) {
+    /// - Parameter settingsRepository: The repository for persisting settings
+    public init(probe: any UsageProbe, settingsRepository: any ProviderSettingsRepository) {
         self.probe = probe
-        // Load persisted enabled state (defaults to false - requires setup)
-        self.isEnabled = UserDefaults.standard.object(forKey: Self.isEnabledKey) as? Bool ?? false
+        self.settingsRepository = settingsRepository
+        // Copilot defaults to false (requires setup)
+        self.isEnabled = settingsRepository.isEnabled(forProvider: "copilot", defaultValue: false)
     }
 
     // MARK: - AIProvider Protocol

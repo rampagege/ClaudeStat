@@ -20,13 +20,10 @@ public final class ZaiProvider: AIProvider, @unchecked Sendable {
         URL(string: "https://docs.z.ai/devpack/faq")
     }
 
-    /// UserDefaults key for persisting isEnabled state
-    private static let isEnabledKey = "provider.zai.isEnabled"
-
-    /// Whether the provider is enabled (persisted to UserDefaults, defaults to true)
+    /// Whether the provider is enabled (persisted via settingsRepository)
     public var isEnabled: Bool {
         didSet {
-            UserDefaults.standard.set(isEnabled, forKey: Self.isEnabledKey)
+            settingsRepository.setEnabled(isEnabled, forProvider: id)
         }
     }
 
@@ -45,15 +42,17 @@ public final class ZaiProvider: AIProvider, @unchecked Sendable {
 
     /// The probe used to fetch usage data
     private let probe: any UsageProbe
+    private let settingsRepository: any ProviderSettingsRepository
 
     // MARK: - Initialization
 
     /// Creates a Z.ai provider with the specified probe
     /// - Parameter probe: The probe to use for fetching usage data
-    public init(probe: any UsageProbe) {
+    /// - Parameter settingsRepository: The repository for persisting settings
+    public init(probe: any UsageProbe, settingsRepository: any ProviderSettingsRepository) {
         self.probe = probe
-        // Load persisted enabled state (defaults to true)
-        self.isEnabled = UserDefaults.standard.object(forKey: Self.isEnabledKey) as? Bool ?? true
+        self.settingsRepository = settingsRepository
+        self.isEnabled = settingsRepository.isEnabled(forProvider: "zai")
     }
 
     // MARK: - AIProvider Protocol

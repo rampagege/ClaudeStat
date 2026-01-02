@@ -20,13 +20,10 @@ public final class ClaudeProvider: AIProvider, @unchecked Sendable {
         URL(string: "https://status.anthropic.com")
     }
 
-    /// UserDefaults key for persisting isEnabled state
-    private static let isEnabledKey = "provider.claude.isEnabled"
-
-    /// Whether the provider is enabled (persisted to UserDefaults, defaults to true)
+    /// Whether the provider is enabled (persisted via settingsRepository)
     public var isEnabled: Bool {
         didSet {
-            UserDefaults.standard.set(isEnabled, forKey: Self.isEnabledKey)
+            settingsRepository.setEnabled(isEnabled, forProvider: id)
         }
     }
 
@@ -55,17 +52,26 @@ public final class ClaudeProvider: AIProvider, @unchecked Sendable {
     /// The probe used to fetch guest pass data
     private let passProbe: (any ClaudePassProbing)?
 
+    /// The settings repository for persisting provider settings
+    private let settingsRepository: any ProviderSettingsRepository
+
     // MARK: - Initialization
 
     /// Creates a Claude provider with the specified probes
     /// - Parameters:
     ///   - probe: The probe to use for fetching usage data
     ///   - passProbe: The probe to use for fetching guest pass data (optional)
-    public init(probe: any UsageProbe, passProbe: (any ClaudePassProbing)? = nil) {
+    ///   - settingsRepository: The repository for persisting settings
+    public init(
+        probe: any UsageProbe,
+        passProbe: (any ClaudePassProbing)? = nil,
+        settingsRepository: any ProviderSettingsRepository
+    ) {
         self.probe = probe
         self.passProbe = passProbe
+        self.settingsRepository = settingsRepository
         // Load persisted enabled state (defaults to true)
-        self.isEnabled = UserDefaults.standard.object(forKey: Self.isEnabledKey) as? Bool ?? true
+        self.isEnabled = settingsRepository.isEnabled(forProvider: "claude")
     }
 
     // MARK: - AIProvider Protocol
