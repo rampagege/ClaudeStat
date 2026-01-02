@@ -192,16 +192,19 @@ public protocol UsageProbe: Sendable {
 │  ├── refreshAll(), selectProvider(), ensureValidSelection()         │
 │  └── overallStatus(), enabledProviders                              │
 │                                                                      │
-│  AIProviders (@Observable) - Repository                              │
+│  AIProviders (@Observable) - Provider Collection Repository          │
 │  ├── all: [AIProvider]                                              │
 │  ├── enabled: [AIProvider] (computed, filters by isEnabled)         │
 │  └── add(), remove(), provider(id:)                                 │
 │                                                                      │
 │  AIProvider (@Observable) - Rich Domain Model                        │
-│  ├── isEnabled: Bool (persisted to UserDefaults)                    │
+│  ├── isEnabled: Bool (via ProviderSettingsRepository)               │
 │  ├── snapshot: UsageSnapshot?                                       │
 │  └── refresh() async                                                │
 │                                                                      │
+│  Repository Protocols (Injected Dependencies)                        │
+│  ├── ProviderSettingsRepository - persists isEnabled state          │
+│  └── CredentialRepository - stores tokens/credentials               │
 └─────────────────────────────────────────────────────────────────────┘
                               │
                               │ Views consume directly
@@ -220,6 +223,7 @@ public protocol UsageProbe: Sendable {
 └─────────────────────────────────────────────────────────────────────┘
 
 Infrastructure (Sources/Infrastructure/)
+├── Storage (UserDefaultsProviderSettingsRepository, CredentialRepository)
 ├── Protocol implementations (probes, network clients)
 └── Adapters (excluded from coverage)
 ```

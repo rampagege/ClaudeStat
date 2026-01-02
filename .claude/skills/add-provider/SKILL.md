@@ -144,14 +144,25 @@ public final class {Provider}Provider: AIProvider, @unchecked Sendable {
     public var dashboardURL: URL? { URL(string: "https://...") }
     public var statusPageURL: URL? { nil }
 
+    /// Whether the provider is enabled (persisted via settingsRepository)
+    public var isEnabled: Bool {
+        didSet {
+            settingsRepository.setEnabled(isEnabled, forProvider: id)
+        }
+    }
+
     public private(set) var isSyncing: Bool = false
     public private(set) var snapshot: UsageSnapshot?
     public private(set) var lastError: Error?
 
     private let probe: any UsageProbe
+    private let settingsRepository: any ProviderSettingsRepository
 
-    public init(probe: any UsageProbe) {
+    public init(probe: any UsageProbe, settingsRepository: any ProviderSettingsRepository) {
         self.probe = probe
+        self.settingsRepository = settingsRepository
+        // Default to enabled for most providers (set defaultValue: false for opt-in providers)
+        self.isEnabled = settingsRepository.isEnabled(forProvider: "{provider-id}")
     }
 
     public func isAvailable() async -> Bool {
@@ -180,11 +191,20 @@ public final class {Provider}Provider: AIProvider, @unchecked Sendable {
 Add to `Sources/App/ClaudeBarApp.swift`:
 
 ```swift
-var providers: [any AIProvider] = [
-    ClaudeProvider(probe: ClaudeUsageProbe()),
+let settingsRepository = UserDefaultsProviderSettingsRepository.shared
+
+let repository = AIProviders(providers: [
+    ClaudeProvider(probe: ClaudeUsageProbe(), settingsRepository: settingsRepository),
     // ... existing providers
-    {Provider}Provider(probe: {Provider}UsageProbe()),  // Add here
-]
+    {Provider}Provider(probe: {Provider}UsageProbe(), settingsRepository: settingsRepository),
+])
+```
+
+For providers that require credentials (like CopilotProvider):
+
+```swift
+let credentialRepository = UserDefaultsCredentialRepository.shared
+CopilotProvider(probe: probe, settingsRepository: settingsRepository, credentialRepository: credentialRepository)
 ```
 
 Add visual identity in `Sources/App/Views/Theme.swift`:
