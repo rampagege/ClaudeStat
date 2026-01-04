@@ -52,7 +52,7 @@ public struct ZaiUsageProbe: UsageProbe {
 
         // Check if z.ai is configured in Claude settings
         do {
-            let config = try await readClaudeConfig()
+            let (config, _) = try await readClaudeConfig()
             return Self.hasZaiEndpoint(in: config)
         } catch {
             AppLog.probes.debug("Zai: Could not read Claude config: \(error.localizedDescription)")
@@ -71,9 +71,9 @@ public struct ZaiUsageProbe: UsageProbe {
         }
 
         // Step 2: Read Claude config
-        let config: String
+        let (config, configPath): (String, String)
         do {
-            config = try await readClaudeConfig()
+            (config, configPath) = try await readClaudeConfig()
         } catch {
             AppLog.probes.error("Zai probe failed: Could not read Claude config: \(error.localizedDescription)")
             throw ProbeError.executionFailed("Could not read Claude config")
@@ -81,12 +81,12 @@ public struct ZaiUsageProbe: UsageProbe {
 
         // Step 3: Detect platform and extract API key
         guard let platform = Self.detectPlatform(from: config) else {
-            AppLog.probes.error("Zai probe failed: No z.ai endpoint found in Claude config")
+            AppLog.probes.error("Zai probe failed: No z.ai endpoint found in Claude config (path: \(configPath))")
             throw ProbeError.authenticationRequired
         }
 
         guard let apiKey = Self.extractAPIKey(from: config) else {
-            AppLog.probes.error("Zai probe failed: No API key found in Claude config")
+            AppLog.probes.error("Zai probe failed: No API key found in Claude config (path: \(configPath))")
             throw ProbeError.authenticationRequired
         }
 
@@ -144,7 +144,7 @@ public struct ZaiUsageProbe: UsageProbe {
 
     // MARK: - Configuration Reading
 
-    private func readClaudeConfig() async throws -> String {
+    private func readClaudeConfig() async throws -> (config: String, path: String) {
         // Use custom path if set, otherwise use default
         let customPath = UserDefaults.standard.string(forKey: "zaiConfigPath")
         let configPath: URL
@@ -166,7 +166,7 @@ public struct ZaiUsageProbe: UsageProbe {
             autoResponses: [:]
         )
 
-        return result.output
+        return (result.output, configPath.path)
     }
 
     // MARK: - Static Parsing Helpers
