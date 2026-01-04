@@ -64,15 +64,11 @@ public struct ZaiUsageProbe: UsageProbe {
 
     /// Fetches the current usage quota from Z.ai API
     public func probe() async throws -> UsageSnapshot {
-        AppLog.probes.info("Starting Z.ai probe...")
-
-        // Step 1: Verify Claude CLI is installed
         guard cliExecutor.locate("claude") != nil else {
             AppLog.probes.error("Zai probe failed: Claude CLI not found")
             throw ProbeError.cliNotFound("Claude")
         }
 
-        // Step 2: Read Claude config
         let (config, configPath): (String, String)
         do {
             (config, configPath) = try await readClaudeConfig()
@@ -81,43 +77,20 @@ public struct ZaiUsageProbe: UsageProbe {
             throw ProbeError.executionFailed("Could not read Claude config")
         }
 
-        // Step 3: Detect platform and extract API key
         guard let platform = Self.detectPlatform(from: config) else {
             AppLog.probes.error("Zai probe failed: No z.ai endpoint found in Claude config (path: \(configPath))")
             throw ProbeError.authenticationRequired
         }
 
-        // Try to extract API key from config file first
-        var apiKey: String?
-        if let configApiKey = Self.extractAPIKey(from: config) {
-            apiKey = configApiKey
-            AppLog.probes.debug("Zai: Using API key from config file")
-        } else {
-            // Fall back to environment variable if configured
-            let envVarName = configRepository.glmAuthEnvVar()
-            if !envVarName.isEmpty {
-                if let envValue = ProcessInfo.processInfo.environment[envVarName], !envValue.isEmpty {
-                    apiKey = envValue
-                    AppLog.probes.debug("Zai: API key not in config, using env var '\(envVarName)'")
-                }
-            }
-        }
-
-        guard let apiKey else {
-            AppLog.probes.error("Zai probe failed: No API key found (config file: \(configPath), env var: \(UserDefaults.standard.string(forKey: "glmAuthEnvVar") ?? "not set"))")
-            throw ProbeError.authenticationRequired
-        }
-
+        let apiKey = try extractAPIKeyWithFallback(from: config, configPath: configPath)
         AppLog.probes.debug("Zai: Detected platform: \(platform.rawValue)")
 
-        // Step 4: Build API URL
         let baseURL = platform.rawValue
         guard let url = URL(string: "\(baseURL)/api/monitor/usage/quota/limit") else {
             AppLog.probes.error("Zai probe failed: Invalid API URL")
             throw ProbeError.executionFailed("Invalid API URL")
         }
 
-        // Step 5: Make API request
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.timeoutInterval = timeout
@@ -132,7 +105,6 @@ public struct ZaiUsageProbe: UsageProbe {
             throw ProbeError.executionFailed("Invalid HTTP response")
         }
 
-        // Step 6: Handle HTTP errors
         switch httpResponse.statusCode {
         case 200...299:
             break
@@ -163,7 +135,6 @@ public struct ZaiUsageProbe: UsageProbe {
     // MARK: - Configuration Reading
 
     private func readClaudeConfig() async throws -> (config: String, path: String) {
-        // Use config repository for path resolution
         let configPath: URL
         let customPath = configRepository.zaiConfigPath()
         if !customPath.isEmpty {
@@ -173,7 +144,6 @@ public struct ZaiUsageProbe: UsageProbe {
         }
         AppLog.probes.debug("Using Z.ai config path: \(configPath.path)")
 
-        // Try reading the config file using cat command for consistency
         let result = try cliExecutor.execute(
             binary: "cat",
             args: [configPath.path],
@@ -184,6 +154,27 @@ public struct ZaiUsageProbe: UsageProbe {
         )
 
         return (result.output, configPath.path)
+    }
+
+    private func extractAPIKeyWithFallback(from config: String, configPath: String) throws -> String {
+        if let configApiKey = Self.extractAPIKey(from: config) {
+            AppLog.probes.debug("Zai: Using API key from config file")
+            return configApiKey
+        }
+
+        let envVarName = configRepository.glmAuthEnvVar()
+        guard !envVarName.isEmpty else {
+            AppLog.probes.error("Zai probe failed: No API key found (config file: \(configPath), env var: not set)")
+            throw ProbeError.authenticationRequired
+        }
+
+        guard let envValue = ProcessInfo.processInfo.environment[envVarName], !envValue.isEmpty else {
+            AppLog.probes.error("Zai probe failed: No API key found (config file: \(configPath), env var: \(envVarName) not set)")
+            throw ProbeError.authenticationRequired
+        }
+
+        AppLog.probes.debug("Zai: API key not in config, using env var '\(envVarName)'")
+        return envValue
     }
 
     // MARK: - Static Parsing Helpers

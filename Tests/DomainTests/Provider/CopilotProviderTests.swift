@@ -27,7 +27,6 @@ struct CopilotProviderTests {
         return mock
     }
 
-    /// Creates a mock config repository for testing
     private func makeConfigRepository() -> MockProviderConfigRepository {
         let mock = MockProviderConfigRepository()
         given(mock).zaiConfigPath().willReturn("")

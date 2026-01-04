@@ -98,10 +98,8 @@ struct SettingsContentView: View {
             if settings.claudeApiBudget > 0 {
                 budgetInput = String(describing: settings.claudeApiBudget)
             }
-            // Initialize Z.ai settings
             zaiConfigPathInput = UserDefaultsProviderConfigRepository.shared.zaiConfigPath()
             glmAuthEnvVarInput = UserDefaultsProviderConfigRepository.shared.glmAuthEnvVar()
-            // Initialize Copilot settings
             copilotAuthEnvVarInput = UserDefaultsProviderConfigRepository.shared.copilotAuthEnvVar()
         }
     }
@@ -809,7 +807,6 @@ struct SettingsContentView: View {
                             .foregroundStyle(AppTheme.textTertiary(for: colorScheme))
                     }
 
-                    // Config Path Input
                     VStack(alignment: .leading, spacing: 6) {
                         Text("SETTINGS.JSON PATH")
                             .font(AppTheme.captionFont(size: 9))
@@ -834,7 +831,6 @@ struct SettingsContentView: View {
                             }
                     }
 
-                    // Environment Variable Input
                     VStack(alignment: .leading, spacing: 6) {
                         Text("AUTH TOKEN ENV VAR (FALLBACK)")
                             .font(AppTheme.captionFont(size: 9))
@@ -859,7 +855,6 @@ struct SettingsContentView: View {
                     }
                     }
 
-                    // Help text
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Leave both empty to use default path with no env var fallback")
                             .font(AppTheme.captionFont(size: 9))
