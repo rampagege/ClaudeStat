@@ -83,8 +83,8 @@ public final class UserDefaultsProviderConfigRepository: ProviderConfigRepositor
     // MARK: - Keys
 
     private enum Keys {
-        static let zaiConfigPath = "zaiConfigPath"
-        static let glmAuthEnvVar = "glmAuthEnvVar"
-        static let copilotAuthEnvVar = "copilotAuthEnvVar"
+        static let zaiConfigPath = "providerConfig.zaiConfigPath"
+        static let glmAuthEnvVar = "providerConfig.glmAuthEnvVar"
+        static let copilotAuthEnvVar = "providerConfig.copilotAuthEnvVar"
     }
 }
