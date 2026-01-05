@@ -9,7 +9,7 @@ import Sparkle
 struct SettingsContentView: View {
     @Binding var showSettings: Bool
     let monitor: QuotaMonitor
-    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.appTheme) private var theme
     @State private var settings = AppSettings.shared
 
     #if ENABLE_SPARKLE
@@ -103,9 +103,6 @@ struct SettingsContentView: View {
 
     // MARK: - Theme Card
 
-    @Environment(\.isChristmasTheme) private var isChristmas
-    @Environment(\.isCLITheme) private var isCLI
-
     /// Convert ThemeMode to string for settings storage
     private var currentThemeMode: ThemeMode {
         ThemeMode(rawValue: settings.themeMode) ?? .system
@@ -117,28 +114,22 @@ struct SettingsContentView: View {
             HStack(spacing: 10) {
                 ZStack {
                     Circle()
-                        .fill(
-                            isCLI
-                                ? AppTheme.cliAccentGradient
-                                : isChristmas
-                                    ? AppTheme.christmasAccentGradient
-                                    : AppTheme.accentGradient(for: colorScheme)
-                        )
+                        .fill(theme.accentGradient)
                         .frame(width: 32, height: 32)
 
                     Image(systemName: currentThemeMode.icon)
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(isCLI ? AppTheme.cliBlack : .white)
+                        .foregroundStyle(theme.id == "cli" ? theme.textPrimary : .white)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Appearance")
-                        .font(isCLI ? .system(size: 14, weight: .bold, design: .monospaced) : AppTheme.titleFont(size: 14))
-                        .foregroundStyle(isCLI ? AppTheme.cliTextPrimary : isChristmas ? AppTheme.christmasTextPrimary : AppTheme.textPrimary(for: colorScheme))
+                        .font(.system(size: 14, weight: .bold, design: theme.fontDesign))
+                        .foregroundStyle(theme.textPrimary)
 
                     Text("Choose your theme")
-                        .font(isCLI ? .system(size: 10, weight: .medium, design: .monospaced) : AppTheme.captionFont(size: 10))
-                        .foregroundStyle(isCLI ? AppTheme.cliTextTertiary : isChristmas ? AppTheme.christmasTextTertiary : AppTheme.textTertiary(for: colorScheme))
+                        .font(.system(size: 10, weight: .medium, design: theme.fontDesign))
+                        .foregroundStyle(theme.textTertiary)
                 }
 
                 Spacer()
@@ -152,9 +143,7 @@ struct SettingsContentView: View {
                 ForEach(ThemeMode.allCases, id: \.rawValue) { mode in
                     ThemeOptionButton(
                         mode: mode,
-                        isSelected: currentThemeMode == mode,
-                        isChristmas: isChristmas,
-                        isCLI: isCLI
+                        isSelected: currentThemeMode == mode
                     ) {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             settings.themeMode = mode.rawValue
@@ -165,25 +154,11 @@ struct SettingsContentView: View {
         }
         .padding(14)
         .background(
-            RoundedRectangle(cornerRadius: isCLI ? 8 : 14)
-                .fill(isCLI ? AppTheme.cliCardGradient : isChristmas ? AppTheme.christmasCardGradient : AppTheme.cardGradient(for: colorScheme))
+            RoundedRectangle(cornerRadius: theme.cardCornerRadius)
+                .fill(theme.cardGradient)
                 .overlay(
-                    RoundedRectangle(cornerRadius: isCLI ? 8 : 14)
-                        .stroke(
-                            isCLI
-                                ? LinearGradient(colors: [AppTheme.cliDarkGray, AppTheme.cliDarkGray], startPoint: .topLeading, endPoint: .bottomTrailing)
-                                : isChristmas
-                                    ? LinearGradient(colors: [AppTheme.christmasGold.opacity(0.4), AppTheme.christmasGold.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                                    : LinearGradient(
-                                        colors: [
-                                            colorScheme == .dark ? Color.white.opacity(0.25) : AppTheme.purpleVibrant(for: colorScheme).opacity(0.18),
-                                            colorScheme == .dark ? Color.white.opacity(0.08) : AppTheme.pinkHot(for: colorScheme).opacity(0.08)
-                                        ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                            lineWidth: 1
-                        )
+                    RoundedRectangle(cornerRadius: theme.cardCornerRadius)
+                        .stroke(theme.glassBorder, lineWidth: 1)
                 )
         )
     }
@@ -196,11 +171,7 @@ struct SettingsContentView: View {
             HStack(spacing: 10) {
                 ZStack {
                     Circle()
-                        .fill(
-                            isChristmas
-                                ? AppTheme.christmasAccentGradient
-                                : AppTheme.accentGradient(for: colorScheme)
-                        )
+                        .fill(theme.accentGradient)
                         .frame(width: 32, height: 32)
 
                     Image(systemName: "cpu")
@@ -210,12 +181,12 @@ struct SettingsContentView: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Providers")
-                        .font(AppTheme.titleFont(size: 14))
-                        .foregroundStyle(isChristmas ? AppTheme.christmasTextPrimary : AppTheme.textPrimary(for: colorScheme))
+                        .font(.system(size: 14, weight: .bold, design: theme.fontDesign))
+                        .foregroundStyle(theme.textPrimary)
 
                     Text("Enable or disable AI providers")
-                        .font(AppTheme.captionFont(size: 10))
-                        .foregroundStyle(isChristmas ? AppTheme.christmasTextTertiary : AppTheme.textTertiary(for: colorScheme))
+                        .font(.system(size: 10, weight: .medium, design: theme.fontDesign))
+                        .foregroundStyle(theme.textTertiary)
                 }
 
                 Spacer()
@@ -230,23 +201,11 @@ struct SettingsContentView: View {
         }
         .padding(14)
         .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(isChristmas ? AppTheme.christmasCardGradient : AppTheme.cardGradient(for: colorScheme))
+            RoundedRectangle(cornerRadius: theme.cardCornerRadius)
+                .fill(theme.cardGradient)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(
-                            LinearGradient(
-                                colors: isChristmas
-                                    ? [AppTheme.christmasGold.opacity(0.4), AppTheme.christmasGold.opacity(0.2)]
-                                    : [
-                                        colorScheme == .dark ? Color.white.opacity(0.25) : AppTheme.purpleVibrant(for: colorScheme).opacity(0.18),
-                                        colorScheme == .dark ? Color.white.opacity(0.08) : AppTheme.pinkHot(for: colorScheme).opacity(0.08)
-                                    ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
+                    RoundedRectangle(cornerRadius: theme.cardCornerRadius)
+                        .stroke(theme.glassBorder, lineWidth: 1)
                 )
         )
     }
@@ -257,8 +216,8 @@ struct SettingsContentView: View {
             ProviderIconView(providerId: provider.id, size: 20)
 
             Text(provider.name)
-                .font(AppTheme.bodyFont(size: 12))
-                .foregroundStyle(isChristmas ? AppTheme.christmasTextPrimary : AppTheme.textPrimary(for: colorScheme))
+                .font(.system(size: 12, weight: .medium, design: theme.fontDesign))
+                .foregroundStyle(theme.textPrimary)
 
             Spacer()
 
@@ -267,7 +226,7 @@ struct SettingsContentView: View {
                 set: { monitor.setProviderEnabled(provider.id, enabled: $0) }
             ))
             .toggleStyle(.switch)
-            .tint(AppTheme.purpleVibrant(for: colorScheme))
+            .tint(theme.accentPrimary)
             .scaleEffect(0.8)
             .labelsHidden()
         }
@@ -290,15 +249,15 @@ struct SettingsContentView: View {
                     Text("Back")
                         .font(AppTheme.bodyFont(size: 11))
                 }
-                .foregroundStyle(AppTheme.textPrimary(for: colorScheme))
+                .foregroundStyle(theme.textPrimary)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(
                     Capsule()
-                        .fill(AppTheme.glassBackground(for: colorScheme))
+                        .fill(theme.glassBackground)
                         .overlay(
                             Capsule()
-                                .stroke(AppTheme.glassBorder(for: colorScheme), lineWidth: 1)
+                                .stroke(theme.glassBorder, lineWidth: 1)
                         )
                 )
             }
@@ -308,7 +267,7 @@ struct SettingsContentView: View {
 
             Text("Settings")
                 .font(AppTheme.titleFont(size: 16))
-                .foregroundStyle(AppTheme.textPrimary(for: colorScheme))
+                .foregroundStyle(theme.textPrimary)
 
             Spacer()
 
@@ -328,7 +287,7 @@ struct SettingsContentView: View {
             // Expandable content
             if settings.claudeApiBudgetEnabled {
                 Divider()
-                    .background(AppTheme.glassBorder(for: colorScheme))
+                    .background(theme.glassBorder)
                     .padding(.vertical, 12)
 
                 claudeBudgetForm
@@ -337,14 +296,13 @@ struct SettingsContentView: View {
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 14)
-                .fill(AppTheme.cardGradient(for: colorScheme))
+                .fill(theme.cardGradient)
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
                         .stroke(
                             LinearGradient(
                                 colors: [
-                                    colorScheme == .dark ? Color.white.opacity(0.25) : AppTheme.purpleVibrant(for: colorScheme).opacity(0.18),
-                                    colorScheme == .dark ? Color.white.opacity(0.08) : AppTheme.pinkHot(for: colorScheme).opacity(0.08)
+                                    theme.glassBorder, theme.glassBorder.opacity(0.5)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -379,19 +337,19 @@ struct SettingsContentView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("Claude API Budget")
-                    .font(AppTheme.titleFont(size: 14))
-                    .foregroundStyle(AppTheme.textPrimary(for: colorScheme))
+                    .font(.system(size: 14, weight: .bold, design: theme.fontDesign))
+                    .foregroundStyle(theme.textPrimary)
 
                 Text("Cost threshold warnings")
-                    .font(AppTheme.captionFont(size: 10))
-                    .foregroundStyle(AppTheme.textTertiary(for: colorScheme))
+                    .font(.system(size: 10, weight: .medium, design: theme.fontDesign))
+                    .foregroundStyle(theme.textTertiary)
             }
 
             Spacer()
 
             Toggle("", isOn: $settings.claudeApiBudgetEnabled)
                 .toggleStyle(.switch)
-                .tint(AppTheme.purpleVibrant(for: colorScheme))
+                .tint(theme.accentPrimary)
                 .scaleEffect(0.8)
                 .labelsHidden()
         }
@@ -403,25 +361,25 @@ struct SettingsContentView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("MONTHLY BUDGET (USD)")
                     .font(AppTheme.captionFont(size: 9))
-                    .foregroundStyle(AppTheme.textSecondary(for: colorScheme))
+                    .foregroundStyle(theme.textSecondary)
                     .tracking(0.5)
 
                 HStack(spacing: 6) {
                     Text("$")
-                        .font(AppTheme.bodyFont(size: 12))
-                        .foregroundStyle(AppTheme.textSecondary(for: colorScheme))
+                        .font(.system(size: 12, weight: .medium, design: theme.fontDesign))
+                        .foregroundStyle(theme.textSecondary)
 
-                    TextField("", text: $budgetInput, prompt: Text("10.00").foregroundStyle(AppTheme.textTertiary(for: colorScheme)))
-                        .font(AppTheme.bodyFont(size: 12))
-                        .foregroundStyle(AppTheme.textPrimary(for: colorScheme))
+                    TextField("", text: $budgetInput, prompt: Text("10.00").foregroundStyle(theme.textTertiary))
+                        .font(.system(size: 12, weight: .medium, design: theme.fontDesign))
+                        .foregroundStyle(theme.textPrimary)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 8)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
-                                .fill(colorScheme == .dark ? Color.white.opacity(0.1) : Color.white.opacity(0.8))
+                                .fill(theme.glassBackground)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 8)
-                                        .stroke(AppTheme.glassBorder(for: colorScheme), lineWidth: 1)
+                                        .stroke(theme.glassBorder, lineWidth: 1)
                                 )
                         )
                         .onChange(of: budgetInput) { _, newValue in
@@ -436,11 +394,11 @@ struct SettingsContentView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Get warnings when approaching your budget threshold.")
                     .font(AppTheme.captionFont(size: 9))
-                    .foregroundStyle(AppTheme.textTertiary(for: colorScheme))
+                    .foregroundStyle(theme.textTertiary)
 
                 Text("Only applies to Claude API accounts, not Claude Max.")
                     .font(AppTheme.captionFont(size: 9))
-                    .foregroundStyle(AppTheme.textTertiary(for: colorScheme))
+                    .foregroundStyle(theme.textTertiary)
             }
         }
     }
@@ -455,7 +413,7 @@ struct SettingsContentView: View {
             // Expandable content
             if copilotProvider?.isEnabled == true {
                 Divider()
-                    .background(AppTheme.glassBorder(for: colorScheme))
+                    .background(theme.glassBorder)
                     .padding(.vertical, 12)
 
                 copilotForm
@@ -464,14 +422,13 @@ struct SettingsContentView: View {
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 14)
-                .fill(AppTheme.cardGradient(for: colorScheme))
+                .fill(theme.cardGradient)
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
                         .stroke(
                             LinearGradient(
                                 colors: [
-                                    colorScheme == .dark ? Color.white.opacity(0.25) : AppTheme.purpleVibrant(for: colorScheme).opacity(0.18),
-                                    colorScheme == .dark ? Color.white.opacity(0.08) : AppTheme.pinkHot(for: colorScheme).opacity(0.08)
+                                    theme.glassBorder, theme.glassBorder.opacity(0.5)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -506,19 +463,19 @@ struct SettingsContentView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("GitHub Copilot")
-                    .font(AppTheme.titleFont(size: 14))
-                    .foregroundStyle(AppTheme.textPrimary(for: colorScheme))
+                    .font(.system(size: 14, weight: .bold, design: theme.fontDesign))
+                    .foregroundStyle(theme.textPrimary)
 
                 Text("Premium usage tracking")
-                    .font(AppTheme.captionFont(size: 10))
-                    .foregroundStyle(AppTheme.textTertiary(for: colorScheme))
+                    .font(.system(size: 10, weight: .medium, design: theme.fontDesign))
+                    .foregroundStyle(theme.textTertiary)
             }
 
             Spacer()
 
             Toggle("", isOn: copilotEnabledBinding)
                 .toggleStyle(.switch)
-                .tint(AppTheme.purpleVibrant(for: colorScheme))
+                .tint(theme.accentPrimary)
                 .scaleEffect(0.8)
                 .labelsHidden()
         }
@@ -530,20 +487,20 @@ struct SettingsContentView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("GITHUB USERNAME")
                     .font(AppTheme.captionFont(size: 9))
-                    .foregroundStyle(AppTheme.textSecondary(for: colorScheme))
+                    .foregroundStyle(theme.textSecondary)
                     .tracking(0.5)
 
-                TextField("", text: copilotUsernameBinding, prompt: Text("username").foregroundStyle(AppTheme.textTertiary(for: colorScheme)))
-                    .font(AppTheme.bodyFont(size: 12))
-                    .foregroundStyle(AppTheme.textPrimary(for: colorScheme))
+                TextField("", text: copilotUsernameBinding, prompt: Text("username").foregroundStyle(theme.textTertiary))
+                    .font(.system(size: 12, weight: .medium, design: theme.fontDesign))
+                    .foregroundStyle(theme.textPrimary)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 8)
                     .background(
                         RoundedRectangle(cornerRadius: 8)
-                            .fill(colorScheme == .dark ? Color.white.opacity(0.1) : Color.white.opacity(0.8))
+                            .fill(theme.glassBackground)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .stroke(AppTheme.glassBorder(for: colorScheme), lineWidth: 1)
+                                    .stroke(theme.glassBorder, lineWidth: 1)
                             )
                     )
             }
@@ -553,7 +510,7 @@ struct SettingsContentView: View {
                 HStack {
                     Text("PERSONAL ACCESS TOKEN")
                         .font(AppTheme.captionFont(size: 9))
-                        .foregroundStyle(AppTheme.textSecondary(for: colorScheme))
+                        .foregroundStyle(theme.textSecondary)
                         .tracking(0.5)
 
                     Spacer()
@@ -565,7 +522,7 @@ struct SettingsContentView: View {
                             Text("Configured")
                                 .font(AppTheme.captionFont(size: 9))
                         }
-                        .foregroundStyle(AppTheme.statusHealthy(for: colorScheme))
+                        .foregroundStyle(theme.statusHealthy)
                     }
                 }
 
@@ -573,21 +530,21 @@ struct SettingsContentView: View {
                     // Token input field
                     Group {
                         if showToken {
-                            TextField("", text: $copilotTokenInput, prompt: Text("ghp_xxxx...").foregroundStyle(AppTheme.textTertiary(for: colorScheme)))
+                            TextField("", text: $copilotTokenInput, prompt: Text("ghp_xxxx...").foregroundStyle(theme.textTertiary))
                         } else {
-                            SecureField("", text: $copilotTokenInput, prompt: Text("ghp_xxxx...").foregroundStyle(AppTheme.textTertiary(for: colorScheme)))
+                            SecureField("", text: $copilotTokenInput, prompt: Text("ghp_xxxx...").foregroundStyle(theme.textTertiary))
                         }
                     }
-                    .font(AppTheme.bodyFont(size: 12))
-                    .foregroundStyle(AppTheme.textPrimary(for: colorScheme))
+                    .font(.system(size: 12, weight: .medium, design: theme.fontDesign))
+                    .foregroundStyle(theme.textPrimary)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 8)
                     .background(
                         RoundedRectangle(cornerRadius: 8)
-                            .fill(colorScheme == .dark ? Color.white.opacity(0.1) : Color.white.opacity(0.8))
+                            .fill(theme.glassBackground)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .stroke(AppTheme.glassBorder(for: colorScheme), lineWidth: 1)
+                                    .stroke(theme.glassBorder, lineWidth: 1)
                             )
                     )
 
@@ -597,11 +554,11 @@ struct SettingsContentView: View {
                     } label: {
                         Image(systemName: showToken ? "eye.slash.fill" : "eye.fill")
                             .font(.system(size: 11))
-                            .foregroundStyle(AppTheme.textSecondary(for: colorScheme))
+                            .foregroundStyle(theme.textSecondary)
                             .frame(width: 28, height: 28)
                             .background(
                                 Circle()
-                                    .fill(AppTheme.glassBackground(for: colorScheme))
+                                    .fill(theme.glassBackground)
                             )
                     }
                     .buttonStyle(.plain)
@@ -615,7 +572,7 @@ struct SettingsContentView: View {
                         Text(error)
                             .font(AppTheme.captionFont(size: 9))
                     }
-                    .foregroundStyle(AppTheme.statusCritical(for: colorScheme))
+                    .foregroundStyle(theme.statusCritical)
                 } else if saveSuccess {
                     HStack(spacing: 4) {
                         Image(systemName: "checkmark.circle.fill")
@@ -623,7 +580,7 @@ struct SettingsContentView: View {
                         Text("Token saved!")
                             .font(AppTheme.captionFont(size: 9))
                     }
-                    .foregroundStyle(AppTheme.statusHealthy(for: colorScheme))
+                    .foregroundStyle(theme.statusHealthy)
                 }
             }
 
@@ -631,20 +588,20 @@ struct SettingsContentView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("AUTH TOKEN ENV VAR (ALTERNATIVE)")
                     .font(AppTheme.captionFont(size: 9))
-                    .foregroundStyle(AppTheme.textSecondary(for: colorScheme))
+                    .foregroundStyle(theme.textSecondary)
                     .tracking(0.5)
 
-                TextField("", text: $copilotAuthEnvVarInput, prompt: Text("GITHUB_TOKEN").foregroundStyle(AppTheme.textTertiary(for: colorScheme)))
-                    .font(AppTheme.bodyFont(size: 12))
-                    .foregroundStyle(AppTheme.textPrimary(for: colorScheme))
+                TextField("", text: $copilotAuthEnvVarInput, prompt: Text("GITHUB_TOKEN").foregroundStyle(theme.textTertiary))
+                    .font(.system(size: 12, weight: .medium, design: theme.fontDesign))
+                    .foregroundStyle(theme.textPrimary)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 8)
                     .background(
                         RoundedRectangle(cornerRadius: 8)
-                            .fill(colorScheme == .dark ? Color.white.opacity(0.1) : Color.white.opacity(0.8))
+                            .fill(theme.glassBackground)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .stroke(AppTheme.glassBorder(for: colorScheme), lineWidth: 1)
+                                    .stroke(theme.glassBorder, lineWidth: 1)
                             )
                     )
                     .onChange(of: copilotAuthEnvVarInput) { _, newValue in
@@ -656,15 +613,15 @@ struct SettingsContentView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("TOKEN LOOKUP ORDER")
                     .font(AppTheme.captionFont(size: 9))
-                    .foregroundStyle(AppTheme.textSecondary(for: colorScheme))
+                    .foregroundStyle(theme.textSecondary)
                     .tracking(0.5)
 
                 Text("1. First checks environment variable if specified")
-                    .font(AppTheme.captionFont(size: 10))
-                    .foregroundStyle(AppTheme.textTertiary(for: colorScheme))
+                    .font(.system(size: 10, weight: .medium, design: theme.fontDesign))
+                    .foregroundStyle(theme.textTertiary)
                 Text("2. Falls back to direct token entry above")
-                    .font(AppTheme.captionFont(size: 10))
-                    .foregroundStyle(AppTheme.textTertiary(for: colorScheme))
+                    .font(.system(size: 10, weight: .medium, design: theme.fontDesign))
+                    .foregroundStyle(theme.textTertiary)
             }
 
             // Save & Test button
@@ -674,7 +631,7 @@ struct SettingsContentView: View {
                         .scaleEffect(0.7)
                     Text("Testing connection...")
                         .font(AppTheme.bodyFont(size: 11))
-                        .foregroundStyle(AppTheme.textSecondary(for: colorScheme))
+                        .foregroundStyle(theme.textSecondary)
                 }
             } else {
                 Button {
@@ -689,7 +646,7 @@ struct SettingsContentView: View {
                         .padding(.vertical, 6)
                         .background(
                             RoundedRectangle(cornerRadius: 6)
-                                .fill(AppTheme.purpleVibrant(for: colorScheme))
+                                .fill(theme.accentPrimary)
                         )
                 }
                 .buttonStyle(.plain)
@@ -698,14 +655,14 @@ struct SettingsContentView: View {
             if let result = copilotTestResult {
                 Text(result)
                     .font(AppTheme.captionFont(size: 9))
-                    .foregroundStyle(result.contains("Success") ? AppTheme.statusHealthy(for: colorScheme) : AppTheme.statusCritical(for: colorScheme))
+                    .foregroundStyle(result.contains("Success") ? theme.statusHealthy : theme.statusCritical)
             }
 
             // Help text and link
             VStack(alignment: .leading, spacing: 4) {
                 Text("Create a fine-grained PAT with 'Plan: read' permission")
                     .font(AppTheme.captionFont(size: 9))
-                    .foregroundStyle(AppTheme.textTertiary(for: colorScheme))
+                    .foregroundStyle(theme.textTertiary)
 
                 Link(destination: URL(string: "https://github.com/settings/tokens?type=beta")!) {
                     HStack(spacing: 3) {
@@ -714,7 +671,7 @@ struct SettingsContentView: View {
                         Image(systemName: "arrow.up.right")
                             .font(.system(size: 7, weight: .bold))
                     }
-                    .foregroundStyle(AppTheme.purpleVibrant(for: colorScheme))
+                    .foregroundStyle(theme.accentPrimary)
                 }
             }
 
@@ -729,7 +686,7 @@ struct SettingsContentView: View {
                         Text("Remove Token")
                             .font(AppTheme.captionFont(size: 9))
                     }
-                    .foregroundStyle(AppTheme.statusCritical(for: colorScheme))
+                    .foregroundStyle(theme.statusCritical)
                 }
                 .buttonStyle(.plain)
             }
@@ -770,12 +727,12 @@ struct SettingsContentView: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Z.ai / GLM Configuration")
-                            .font(AppTheme.titleFont(size: 14))
-                            .foregroundStyle(isChristmas ? AppTheme.christmasTextPrimary : AppTheme.textPrimary(for: colorScheme))
+                            .font(.system(size: 14, weight: .bold, design: theme.fontDesign))
+                            .foregroundStyle(theme.textPrimary)
 
                         Text("Authentication fallback settings")
-                            .font(AppTheme.captionFont(size: 10))
-                            .foregroundStyle(isChristmas ? AppTheme.christmasTextTertiary : AppTheme.textTertiary(for: colorScheme))
+                            .font(.system(size: 10, weight: .medium, design: theme.fontDesign))
+                            .foregroundStyle(theme.textTertiary)
                     }
 
                     Spacer()
@@ -783,7 +740,7 @@ struct SettingsContentView: View {
                     // Expand/collapse indicator
                     Image(systemName: zaiConfigExpanded ? "chevron.up" : "chevron.down")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(AppTheme.textTertiary(for: colorScheme))
+                        .foregroundStyle(theme.textTertiary)
                 }
             }
             .buttonStyle(.plain)
@@ -791,7 +748,7 @@ struct SettingsContentView: View {
             // Expanded content
             if zaiConfigExpanded {
                 Divider()
-                    .background(AppTheme.glassBorder(for: colorScheme))
+                    .background(theme.glassBorder)
                     .padding(.vertical, 12)
 
                 VStack(alignment: .leading, spacing: 14) {
@@ -799,34 +756,34 @@ struct SettingsContentView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("TOKEN LOOKUP ORDER")
                             .font(AppTheme.captionFont(size: 9))
-                            .foregroundStyle(AppTheme.textSecondary(for: colorScheme))
+                            .foregroundStyle(theme.textSecondary)
                             .tracking(0.5)
 
                         Text("1. First looks for token in the settings.json file")
-                            .font(AppTheme.captionFont(size: 10))
-                            .foregroundStyle(AppTheme.textTertiary(for: colorScheme))
+                            .font(.system(size: 10, weight: .medium, design: theme.fontDesign))
+                            .foregroundStyle(theme.textTertiary)
                         Text("2. Falls back to environment variable if not found in file")
-                            .font(AppTheme.captionFont(size: 10))
-                            .foregroundStyle(AppTheme.textTertiary(for: colorScheme))
+                            .font(.system(size: 10, weight: .medium, design: theme.fontDesign))
+                            .foregroundStyle(theme.textTertiary)
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
                         Text("SETTINGS.JSON PATH")
                             .font(AppTheme.captionFont(size: 9))
-                            .foregroundStyle(AppTheme.textSecondary(for: colorScheme))
+                            .foregroundStyle(theme.textSecondary)
                             .tracking(0.5)
 
-                        TextField("", text: $zaiConfigPathInput, prompt: Text("~/.claude/settings.json").foregroundStyle(AppTheme.textTertiary(for: colorScheme)))
-                            .font(AppTheme.bodyFont(size: 12))
-                            .foregroundStyle(AppTheme.textPrimary(for: colorScheme))
+                        TextField("", text: $zaiConfigPathInput, prompt: Text("~/.claude/settings.json").foregroundStyle(theme.textTertiary))
+                            .font(.system(size: 12, weight: .medium, design: theme.fontDesign))
+                            .foregroundStyle(theme.textPrimary)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 8)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(colorScheme == .dark ? Color.white.opacity(0.1) : Color.white.opacity(0.8))
+                                    .fill(theme.glassBackground)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 8)
-                                            .stroke(AppTheme.glassBorder(for: colorScheme), lineWidth: 1)
+                                            .stroke(theme.glassBorder, lineWidth: 1)
                                     )
                             )
                             .onChange(of: zaiConfigPathInput) { _, newValue in
@@ -837,20 +794,20 @@ struct SettingsContentView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("AUTH TOKEN ENV VAR (FALLBACK)")
                             .font(AppTheme.captionFont(size: 9))
-                            .foregroundStyle(AppTheme.textSecondary(for: colorScheme))
+                            .foregroundStyle(theme.textSecondary)
                             .tracking(0.5)
 
-                        TextField("", text: $glmAuthEnvVarInput, prompt: Text("GLM_AUTH_TOKEN").foregroundStyle(AppTheme.textTertiary(for: colorScheme)))
-                            .font(AppTheme.bodyFont(size: 12))
-                            .foregroundStyle(AppTheme.textPrimary(for: colorScheme))
+                        TextField("", text: $glmAuthEnvVarInput, prompt: Text("GLM_AUTH_TOKEN").foregroundStyle(theme.textTertiary))
+                            .font(.system(size: 12, weight: .medium, design: theme.fontDesign))
+                            .foregroundStyle(theme.textPrimary)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 8)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(colorScheme == .dark ? Color.white.opacity(0.1) : Color.white.opacity(0.8))
+                                    .fill(theme.glassBackground)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 8)
-                                            .stroke(AppTheme.glassBorder(for: colorScheme), lineWidth: 1)
+                                            .stroke(theme.glassBorder, lineWidth: 1)
                                     )
                             )
                     .onChange(of: glmAuthEnvVarInput) { _, newValue in
@@ -861,7 +818,7 @@ struct SettingsContentView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Leave both empty to use default path with no env var fallback")
                             .font(AppTheme.captionFont(size: 9))
-                            .foregroundStyle(AppTheme.textTertiary(for: colorScheme))
+                            .foregroundStyle(theme.textTertiary)
                     }
                 }
             }
@@ -869,17 +826,12 @@ struct SettingsContentView: View {
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 14)
-                .fill(isChristmas ? AppTheme.christmasCardGradient : AppTheme.cardGradient(for: colorScheme))
+                .fill(theme.cardGradient)
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
                         .stroke(
                             LinearGradient(
-                                colors: isChristmas
-                                    ? [AppTheme.christmasGold.opacity(0.4), AppTheme.christmasGold.opacity(0.2)]
-                                    : [
-                                        colorScheme == .dark ? Color.white.opacity(0.25) : AppTheme.purpleVibrant(for: colorScheme).opacity(0.18),
-                                        colorScheme == .dark ? Color.white.opacity(0.08) : AppTheme.pinkHot(for: colorScheme).opacity(0.08)
-                                    ],
+                                colors: [theme.glassBorder, theme.glassBorder.opacity(0.5)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
@@ -917,12 +869,12 @@ struct SettingsContentView: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Updates")
-                        .font(AppTheme.titleFont(size: 14))
-                        .foregroundStyle(isChristmas ? AppTheme.christmasTextPrimary : AppTheme.textPrimary(for: colorScheme))
+                        .font(.system(size: 14, weight: .bold, design: theme.fontDesign))
+                        .foregroundStyle(theme.textPrimary)
 
                     Text("Version \(appVersion)")
-                        .font(AppTheme.captionFont(size: 10))
-                        .foregroundStyle(isChristmas ? AppTheme.christmasTextTertiary : AppTheme.textTertiary(for: colorScheme))
+                        .font(.system(size: 10, weight: .medium, design: theme.fontDesign))
+                        .foregroundStyle(theme.textTertiary)
                 }
 
                 Spacer()
@@ -978,14 +930,14 @@ struct SettingsContentView: View {
                         Text("Last checked: \(lastCheck.formatted(date: .abbreviated, time: .shortened))")
                             .font(AppTheme.captionFont(size: 9))
                     }
-                    .foregroundStyle(isChristmas ? AppTheme.christmasTextTertiary : AppTheme.textTertiary(for: colorScheme))
+                    .foregroundStyle(theme.textTertiary)
                 }
 
                 // Auto updates toggle
                 HStack {
                     Text("Check automatically")
                         .font(AppTheme.bodyFont(size: 11))
-                        .foregroundStyle(isChristmas ? AppTheme.christmasTextPrimary : AppTheme.textPrimary(for: colorScheme))
+                        .foregroundStyle(theme.textPrimary)
 
                     Spacer()
 
@@ -994,7 +946,7 @@ struct SettingsContentView: View {
                         set: { sparkleUpdater?.automaticallyChecksForUpdates = $0 }
                     ))
                     .toggleStyle(.switch)
-                    .tint(AppTheme.purpleVibrant(for: colorScheme))
+                    .tint(theme.accentPrimary)
                     .scaleEffect(0.8)
                     .labelsHidden()
                 }
@@ -1004,18 +956,18 @@ struct SettingsContentView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Include beta versions")
                             .font(AppTheme.bodyFont(size: 11))
-                            .foregroundStyle(isChristmas ? AppTheme.christmasTextPrimary : AppTheme.textPrimary(for: colorScheme))
+                            .foregroundStyle(theme.textPrimary)
 
                         Text("Get early access to new features")
                             .font(AppTheme.captionFont(size: 9))
-                            .foregroundStyle(isChristmas ? AppTheme.christmasTextTertiary : AppTheme.textTertiary(for: colorScheme))
+                            .foregroundStyle(theme.textTertiary)
                     }
 
                     Spacer()
 
                     Toggle("", isOn: $settings.receiveBetaUpdates)
                         .toggleStyle(.switch)
-                        .tint(AppTheme.purpleVibrant(for: colorScheme))
+                        .tint(theme.accentPrimary)
                         .scaleEffect(0.8)
                         .labelsHidden()
                 }
@@ -1025,25 +977,20 @@ struct SettingsContentView: View {
                     Image(systemName: "hammer.fill")
                         .font(.system(size: 10))
                     Text("Updates unavailable in debug builds")
-                        .font(AppTheme.captionFont(size: 10))
+                        .font(.system(size: 10, weight: .medium, design: theme.fontDesign))
                 }
-                .foregroundStyle(isChristmas ? AppTheme.christmasTextTertiary : AppTheme.textTertiary(for: colorScheme))
+                .foregroundStyle(theme.textTertiary)
             }
         }
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 14)
-                .fill(isChristmas ? AppTheme.christmasCardGradient : AppTheme.cardGradient(for: colorScheme))
+                .fill(theme.cardGradient)
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
                         .stroke(
                             LinearGradient(
-                                colors: isChristmas
-                                    ? [AppTheme.christmasGold.opacity(0.4), AppTheme.christmasGold.opacity(0.2)]
-                                    : [
-                                        colorScheme == .dark ? Color.white.opacity(0.25) : AppTheme.purpleVibrant(for: colorScheme).opacity(0.18),
-                                        colorScheme == .dark ? Color.white.opacity(0.08) : AppTheme.pinkHot(for: colorScheme).opacity(0.08)
-                                    ],
+                                colors: [theme.glassBorder, theme.glassBorder.opacity(0.5)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
@@ -1086,12 +1033,12 @@ struct SettingsContentView: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Logs")
-                        .font(AppTheme.titleFont(size: 14))
-                        .foregroundStyle(isChristmas ? AppTheme.christmasTextPrimary : AppTheme.textPrimary(for: colorScheme))
+                        .font(.system(size: 14, weight: .bold, design: theme.fontDesign))
+                        .foregroundStyle(theme.textPrimary)
 
                     Text("View application logs")
-                        .font(AppTheme.captionFont(size: 10))
-                        .foregroundStyle(isChristmas ? AppTheme.christmasTextTertiary : AppTheme.textTertiary(for: colorScheme))
+                        .font(.system(size: 10, weight: .medium, design: theme.fontDesign))
+                        .foregroundStyle(theme.textTertiary)
                 }
 
                 Spacer()
@@ -1131,22 +1078,17 @@ struct SettingsContentView: View {
             // Help text
             Text("Opens ClaudeBar.log in TextEdit")
                 .font(AppTheme.captionFont(size: 9))
-                .foregroundStyle(isChristmas ? AppTheme.christmasTextTertiary : AppTheme.textTertiary(for: colorScheme))
+                .foregroundStyle(theme.textTertiary)
         }
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 14)
-                .fill(isChristmas ? AppTheme.christmasCardGradient : AppTheme.cardGradient(for: colorScheme))
+                .fill(theme.cardGradient)
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
                         .stroke(
                             LinearGradient(
-                                colors: isChristmas
-                                    ? [AppTheme.christmasGold.opacity(0.4), AppTheme.christmasGold.opacity(0.2)]
-                                    : [
-                                        colorScheme == .dark ? Color.white.opacity(0.25) : AppTheme.purpleVibrant(for: colorScheme).opacity(0.18),
-                                        colorScheme == .dark ? Color.white.opacity(0.08) : AppTheme.pinkHot(for: colorScheme).opacity(0.08)
-                                    ],
+                                colors: [theme.glassBorder, theme.glassBorder.opacity(0.5)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
@@ -1174,8 +1116,8 @@ struct SettingsContentView: View {
                     .padding(.vertical, 7)
                     .background(
                         Capsule()
-                            .fill(AppTheme.accentGradient(for: colorScheme))
-                            .shadow(color: AppTheme.pinkHot(for: colorScheme).opacity(0.25), radius: 6, y: 2)
+                            .fill(theme.accentGradient)
+                            .shadow(color: theme.accentSecondary.opacity(0.25), radius: 6, y: 2)
                     )
             }
             .buttonStyle(.plain)
@@ -1248,20 +1190,10 @@ struct SettingsContentView: View {
 struct ThemeOptionButton: View {
     let mode: ThemeMode
     let isSelected: Bool
-    let isChristmas: Bool
-    let isCLI: Bool
     let action: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.appTheme) private var theme
     @State private var isHovering = false
-
-    init(mode: ThemeMode, isSelected: Bool, isChristmas: Bool, isCLI: Bool = false, action: @escaping () -> Void) {
-        self.mode = mode
-        self.isSelected = isSelected
-        self.isChristmas = isChristmas
-        self.isCLI = isCLI
-        self.action = action
-    }
 
     var body: some View {
         Button(action: action) {
@@ -1274,22 +1206,22 @@ struct ThemeOptionButton: View {
 
                     Image(systemName: mode.icon)
                         .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(mode == .cli ? AppTheme.cliBlack : .white)
+                        .foregroundStyle(mode == .cli ? Color.black : .white)
                 }
 
                 VStack(alignment: .leading, spacing: 1) {
                     Text(mode.displayName)
-                        .font(mode == .cli ? .system(size: 11, weight: .medium, design: .monospaced) : AppTheme.bodyFont(size: 11))
-                        .foregroundStyle(textColor)
+                        .font(.system(size: 11, weight: .medium, design: mode == .cli ? .monospaced : theme.fontDesign))
+                        .foregroundStyle(theme.textPrimary)
 
                     if mode == .christmas {
                         Text("Festive")
-                            .font(AppTheme.captionFont(size: 8))
-                            .foregroundStyle(AppTheme.christmasGold)
+                            .font(.system(size: 8, weight: .medium, design: .rounded))
+                            .foregroundStyle(ChristmasTheme().accentPrimary)
                     } else if mode == .cli {
                         Text("Terminal")
                             .font(.system(size: 8, weight: .medium, design: .monospaced))
-                            .foregroundStyle(AppTheme.cliGreen)
+                            .foregroundStyle(CLITheme().accentPrimary)
                     }
                 }
 
@@ -1299,17 +1231,17 @@ struct ThemeOptionButton: View {
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 14))
-                        .foregroundStyle(checkmarkColor)
+                        .foregroundStyle(theme.statusHealthy)
                 }
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: mode == .cli ? 6 : 10)
-                    .fill(backgroundColor)
+                    .fill(isSelected ? theme.accentPrimary.opacity(0.15) : (isHovering ? theme.hoverOverlay : Color.clear))
                     .overlay(
                         RoundedRectangle(cornerRadius: mode == .cli ? 6 : 10)
-                            .stroke(borderColor, lineWidth: isSelected ? 2 : 1)
+                            .stroke(isSelected ? theme.accentPrimary : theme.glassBorder.opacity(0.5), lineWidth: isSelected ? 2 : 1)
                     )
             )
             .scaleEffect(isHovering ? 1.02 : 1.0)
@@ -1321,83 +1253,16 @@ struct ThemeOptionButton: View {
     private var iconBackgroundGradient: LinearGradient {
         switch mode {
         case .light:
-            return LinearGradient(
-                colors: [Color.orange, Color.yellow],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            return LinearGradient(colors: [Color.orange, Color.yellow], startPoint: .topLeading, endPoint: .bottomTrailing)
         case .dark:
-            return LinearGradient(
-                colors: [Color.indigo, Color.purple],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            return LinearGradient(colors: [Color.indigo, Color.purple], startPoint: .topLeading, endPoint: .bottomTrailing)
         case .system:
-            return LinearGradient(
-                colors: [Color.gray, Color.secondary],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            return LinearGradient(colors: [Color.gray, Color.secondary], startPoint: .topLeading, endPoint: .bottomTrailing)
         case .cli:
-            return AppTheme.cliAccentGradient
+            return CLITheme().accentGradient
         case .christmas:
-            return AppTheme.christmasAccentGradient
+            return ChristmasTheme().accentGradient
         }
-    }
-
-    private var textColor: Color {
-        if isCLI {
-            return AppTheme.cliTextPrimary
-        }
-        if isChristmas {
-            return AppTheme.christmasTextPrimary
-        }
-        return AppTheme.textPrimary(for: colorScheme)
-    }
-
-    private var checkmarkColor: Color {
-        if mode == .cli || isCLI {
-            return AppTheme.cliGreen
-        }
-        if mode == .christmas || isChristmas {
-            return AppTheme.christmasGold
-        }
-        return AppTheme.statusHealthy(for: colorScheme)
-    }
-
-    private var backgroundColor: Color {
-        if isSelected {
-            if mode == .cli || isCLI {
-                return AppTheme.cliGreen.opacity(0.15)
-            }
-            if mode == .christmas || isChristmas {
-                return AppTheme.christmasGold.opacity(0.15)
-            }
-            return AppTheme.purpleVibrant(for: colorScheme).opacity(0.15)
-        }
-        if isHovering {
-            if isCLI {
-                return AppTheme.cliCharcoal
-            }
-            return AppTheme.glassBackground(for: colorScheme)
-        }
-        return Color.clear
-    }
-
-    private var borderColor: Color {
-        if isSelected {
-            if mode == .cli || isCLI {
-                return AppTheme.cliGreen
-            }
-            if mode == .christmas || isChristmas {
-                return AppTheme.christmasGold
-            }
-            return AppTheme.purpleVibrant(for: colorScheme)
-        }
-        if isCLI {
-            return AppTheme.cliDarkGray
-        }
-        return AppTheme.glassBorder(for: colorScheme).opacity(0.5)
     }
 }
 
@@ -1405,18 +1270,18 @@ struct ThemeOptionButton: View {
 
 #Preview("Settings - Dark") {
     ZStack {
-        AppTheme.backgroundGradient(for: .dark)
+        DarkTheme().backgroundGradient
         SettingsContentView(showSettings: .constant(true), monitor: QuotaMonitor(providers: AIProviders(providers: [])))
     }
+    .appThemeProvider(themeModeId: "dark")
     .frame(width: 380, height: 420)
-    .preferredColorScheme(.dark)
 }
 
 #Preview("Settings - Light") {
     ZStack {
-        AppTheme.backgroundGradient(for: .light)
+        LightTheme().backgroundGradient
         SettingsContentView(showSettings: .constant(true), monitor: QuotaMonitor(providers: AIProviders(providers: [])))
     }
+    .appThemeProvider(themeModeId: "light")
     .frame(width: 380, height: 420)
-    .preferredColorScheme(.light)
 }

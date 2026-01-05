@@ -282,7 +282,7 @@ import Domain
                 Image(systemName: "gearshape.fill")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(AppTheme.textSecondary(for: .dark))
-                UpdateBadge(isChristmas: false)
+                UpdateBadge()
                     .offset(x: 14, y: -14)
             }
             Text("Dark")
@@ -299,7 +299,7 @@ import Domain
                 Image(systemName: "gearshape.fill")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(AppTheme.textSecondary(for: .light))
-                UpdateBadge(isChristmas: false)
+                UpdateBadge()
                     .offset(x: 14, y: -14)
             }
             .environment(\.colorScheme, .light)
@@ -317,7 +317,7 @@ import Domain
                 Image(systemName: "gearshape.fill")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(AppTheme.christmasTextSecondary)
-                UpdateBadge(isChristmas: true)
+                UpdateBadge(accentColor: ChristmasTheme().accentPrimary)
                     .offset(x: 14, y: -14)
             }
             Text("Christmas")

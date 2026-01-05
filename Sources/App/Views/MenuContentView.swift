@@ -5,17 +5,14 @@ import Infrastructure
 import Sparkle
 #endif
 
-/// The main menu content view with adaptive light/dark/cli/christmas theme support.
-/// Features purple-pink gradients, glassmorphism cards, and bold typography.
-/// Christmas theme adds festive colors, snowfall, and holiday orbs.
-/// CLI theme provides minimalistic monochrome terminal aesthetics.
+/// The main menu content view with adaptive theme support via AppThemeProvider.
+/// Uses the pluggable theme system for consistent styling across all themes.
 struct MenuContentView: View {
     let monitor: QuotaMonitor
     let quotaAlerter: QuotaAlerter
 
+    @Environment(\.appTheme) private var theme
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.isChristmasTheme) private var isChristmas
-    @Environment(\.isCLITheme) private var isCLI
     #if ENABLE_SPARKLE
     @Environment(\.sparkleUpdater) private var sparkleUpdater
     #endif
@@ -39,21 +36,21 @@ struct MenuContentView: View {
 
     var body: some View {
         ZStack {
-            // Gradient background - CLI, Christmas, or standard
-            (isCLI ? AppTheme.cliBackgroundGradient : isChristmas ? AppTheme.christmasBackgroundGradient : AppTheme.backgroundGradient(for: colorScheme))
+            // Gradient background from theme
+            theme.backgroundGradient
                 .ignoresSafeArea()
 
-            // Subtle animated orbs in background - only for Christmas or standard (not CLI)
-            if isChristmas {
-                ChristmasBackgroundOrbs()
-            } else if !isCLI {
-                backgroundOrbs
+            // Background orbs (if theme supports them)
+            if theme.showBackgroundOrbs {
+                if theme.id == "christmas" {
+                    ChristmasBackgroundOrbs()
+                } else {
+                    backgroundOrbs
+                }
             }
 
-            // Snowfall overlay for Christmas theme - lots of snow!
-            if isChristmas {
-                SnowfallOverlay(snowflakeCount: 25)
-            }
+            // Theme overlay (e.g., snowfall for Christmas)
+            theme.overlayView
 
             if showSettings {
                 // Settings View
@@ -174,15 +171,14 @@ struct MenuContentView: View {
     private var headerView: some View {
         HStack(spacing: 12) {
             // Custom Provider Icon - changes based on selected provider
-            // For Christmas, add festive glow effect
             ZStack {
                 ProviderIconView(providerId: selectedProviderId, size: 38)
 
                 // Christmas star sparkle overlay
-                if isChristmas {
+                if theme.id == "christmas" {
                     Image(systemName: "sparkle")
                         .font(.system(size: 10))
-                        .foregroundStyle(AppTheme.christmasGold)
+                        .foregroundStyle(theme.accentPrimary)
                         .offset(x: 14, y: -14)
                 }
             }
@@ -191,20 +187,20 @@ struct MenuContentView: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 4) {
                     Text("ClaudeBar")
-                        .font(isCLI ? .system(size: 18, weight: .bold, design: .monospaced) : AppTheme.titleFont(size: 18))
-                        .foregroundStyle(isCLI ? AppTheme.cliTextPrimary : isChristmas ? AppTheme.christmasTextPrimary : AppTheme.textPrimary(for: colorScheme))
+                        .font(.system(size: 18, weight: .bold, design: theme.fontDesign))
+                        .foregroundStyle(theme.textPrimary)
 
-                    // Christmas gift icon - vibrant red
-                    if isChristmas {
+                    // Christmas gift icon
+                    if theme.id == "christmas" {
                         Image(systemName: "gift.fill")
                             .font(.system(size: 12))
-                            .foregroundStyle(AppTheme.christmasRed)
+                            .foregroundStyle(theme.accentPrimary)
                     }
                 }
 
-                Text(isCLI ? "> usage monitor" : isChristmas ? "Happy Holidays!" : "AI Usage Monitor")
-                    .font(isCLI ? .system(size: 11, weight: .medium, design: .monospaced) : AppTheme.captionFont(size: 11))
-                    .foregroundStyle(isCLI ? AppTheme.cliGreen : isChristmas ? AppTheme.christmasTextSecondary : AppTheme.textSecondary(for: colorScheme))
+                Text(headerSubtitle)
+                    .font(.system(size: 11, weight: .medium, design: theme.fontDesign))
+                    .foregroundStyle(theme.id == "cli" ? theme.accentPrimary : theme.textSecondary)
             }
 
             Spacer()
@@ -214,6 +210,14 @@ struct MenuContentView: View {
         }
         .opacity(animateIn ? 1 : 0)
         .offset(y: animateIn ? 0 : -10)
+    }
+
+    private var headerSubtitle: String {
+        switch theme.id {
+        case "cli": return "> usage monitor"
+        case "christmas": return "Happy Holidays!"
+        default: return "AI Usage Monitor"
+        }
     }
 
     /// Status of the currently selected provider
@@ -227,7 +231,7 @@ struct MenuContentView: View {
     }
 
     private var statusBadge: some View {
-        let statusColor = isCLI ? cliStatusColor : selectedProviderStatus.themeColor(for: colorScheme)
+        let statusColor = theme.statusColor(for: selectedProviderStatus)
 
         return HStack(spacing: 6) {
             // Animated pulse dot
@@ -237,36 +241,19 @@ struct MenuContentView: View {
             )
 
             Text(statusText)
-                .font(isCLI ? .system(size: 11, weight: .medium, design: .monospaced) : AppTheme.captionFont(size: 11))
-                .foregroundStyle(isCLI ? AppTheme.cliTextPrimary : isChristmas ? AppTheme.christmasTextPrimary : AppTheme.textPrimary(for: colorScheme))
+                .font(.system(size: 11, weight: .medium, design: theme.fontDesign))
+                .foregroundStyle(theme.textPrimary)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(
-            RoundedRectangle(cornerRadius: isCLI ? 4 : 20)
-                .fill(isCLI ? AppTheme.cliCharcoal : statusColor.opacity(isChristmas ? 0.3 : (colorScheme == .dark ? 0.25 : 0.15)))
+            RoundedRectangle(cornerRadius: theme.pillCornerRadius)
+                .fill(theme.glassBackground)
                 .overlay(
-                    RoundedRectangle(cornerRadius: isCLI ? 4 : 20)
-                        .stroke(
-                            isCLI
-                                ? statusColor.opacity(0.6)
-                                : isChristmas
-                                    ? AppTheme.christmasGold.opacity(0.5)
-                                    : statusColor.opacity(colorScheme == .dark ? 0.5 : 0.3),
-                            lineWidth: 1
-                        )
+                    RoundedRectangle(cornerRadius: theme.pillCornerRadius)
+                        .stroke(statusColor.opacity(0.5), lineWidth: 1)
                 )
         )
-    }
-
-    /// CLI-specific status color mapping
-    private var cliStatusColor: Color {
-        switch selectedProviderStatus {
-        case .healthy: return AppTheme.cliStatusHealthy
-        case .warning: return AppTheme.cliStatusWarning
-        case .critical: return AppTheme.cliStatusCritical
-        case .depleted: return AppTheme.cliStatusDepleted
-        }
     }
 
     private var statusText: String {
@@ -353,7 +340,7 @@ struct MenuContentView: View {
                 HStack(spacing: 6) {
                     Text(displayName)
                         .font(AppTheme.bodyFont(size: 12))
-                        .foregroundStyle(AppTheme.textPrimary(for: colorScheme))
+                        .foregroundStyle(theme.textPrimary)
                         .lineLimit(1)
 
                     // Account tier badge
@@ -432,7 +419,7 @@ struct MenuContentView: View {
 
             Text("\(selectedProvider?.name ?? selectedProviderId) Unavailable")
                 .font(AppTheme.titleFont(size: 14))
-                .foregroundStyle(AppTheme.textPrimary(for: colorScheme))
+                .foregroundStyle(theme.textPrimary)
 
             Text("Install CLI or check configuration")
                 .font(AppTheme.captionFont(size: 11))
@@ -451,8 +438,7 @@ struct MenuContentView: View {
             WrappedActionButton(
                 icon: "safari.fill",
                 label: "Dashboard",
-                gradient: isChristmas ? AppTheme.christmasAccentGradient : AppTheme.providerGradient(for: selectedProviderId, scheme: colorScheme),
-                isChristmas: isChristmas
+                gradient: theme.accentGradient
             ) {
                 if let url = selectedProvider?.dashboardURL {
                     NSWorkspace.shared.open(url)
@@ -465,11 +451,8 @@ struct MenuContentView: View {
             WrappedActionButton(
                 icon: isCurrentlyRefreshing ? "arrow.trianglehead.2.counterclockwise.rotate.90" : "arrow.clockwise",
                 label: isCurrentlyRefreshing ? "Syncing" : "Refresh",
-                gradient: isChristmas
-                    ? AppTheme.christmasGreenGradient
-                    : AppTheme.accentGradient(for: colorScheme),
-                isLoading: isCurrentlyRefreshing,
-                isChristmas: isChristmas
+                gradient: theme.accentGradient,
+                isLoading: isCurrentlyRefreshing
             ) {
                 Task { await refresh() }
             }
@@ -486,11 +469,7 @@ struct MenuContentView: View {
                 } label: {
                     ZStack {
                         Circle()
-                            .fill(
-                                isChristmas
-                                    ? AppTheme.christmasGoldGradient
-                                    : AppTheme.shareGradient(for: colorScheme)
-                            )
+                            .fill(theme.shareGradient)
                             .frame(width: 32, height: 32)
 
                         if isFetchingPasses {
@@ -517,17 +496,17 @@ struct MenuContentView: View {
             } label: {
                 ZStack {
                     Circle()
-                        .fill(isChristmas ? AppTheme.christmasGlassBackground : AppTheme.glassBackground(for: colorScheme))
+                        .fill(theme.glassBackground)
                         .frame(width: 32, height: 32)
 
                     Image(systemName: "gearshape.fill")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(isChristmas ? AppTheme.christmasTextSecondary : AppTheme.textSecondary(for: colorScheme))
+                        .foregroundStyle(theme.textSecondary)
 
                     // Update available indicator
                     #if ENABLE_SPARKLE
                     if sparkleUpdater?.isUpdateAvailable == true {
-                        UpdateBadge(isChristmas: isChristmas)
+                        UpdateBadge(accentColor: theme.accentPrimary)
                             .offset(x: 14, y: -14)
                     }
                     #endif
@@ -543,12 +522,12 @@ struct MenuContentView: View {
             } label: {
                 ZStack {
                     Circle()
-                        .fill(isChristmas ? AppTheme.christmasGlassBackground : AppTheme.glassBackground(for: colorScheme))
+                        .fill(theme.glassBackground)
                         .frame(width: 32, height: 32)
 
                     Image(systemName: "xmark")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(isChristmas ? AppTheme.christmasTextSecondary : AppTheme.textSecondary(for: colorScheme))
+                        .foregroundStyle(theme.textSecondary)
                 }
             }
             .buttonStyle(.plain)
@@ -611,8 +590,7 @@ struct ProviderPill: View {
     let hasData: Bool
     let action: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.isCLITheme) private var isCLI
+    @Environment(\.appTheme) private var theme
     @State private var isHovering = false
 
     var body: some View {
@@ -622,61 +600,31 @@ struct ProviderPill: View {
                     .font(.system(size: 10, weight: .semibold))
 
                 Text(providerName)
-                    .font(isCLI ? .system(size: 11, weight: .medium, design: .monospaced) : AppTheme.bodyFont(size: 11))
+                    .font(.system(size: 11, weight: .medium, design: theme.fontDesign))
                     .lineLimit(1)
                     .fixedSize()
             }
-            .foregroundStyle(pillForegroundColor)
+            .foregroundStyle(isSelected ? (theme.id == "cli" ? theme.textPrimary : .white) : theme.textPrimary)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(
                 ZStack {
                     if isSelected {
-                        RoundedRectangle(cornerRadius: isCLI ? 4 : 20)
-                            .fill(isCLI ? AppTheme.cliAccentGradient : AppTheme.providerGradient(for: providerId, scheme: colorScheme))
-                            .shadow(color: isCLI ? AppTheme.cliGreen.opacity(0.3) : AppTheme.providerColor(for: providerId, scheme: colorScheme).opacity(colorScheme == .dark ? 0.4 : 0.25), radius: isCLI ? 4 : 6, y: 2)
+                        RoundedRectangle(cornerRadius: theme.pillCornerRadius)
+                            .fill(theme.accentGradient)
+                            .shadow(color: theme.accentPrimary.opacity(0.3), radius: 6, y: 2)
                     } else {
-                        RoundedRectangle(cornerRadius: isCLI ? 4 : 20)
-                            .fill(pillBackgroundColor)
+                        RoundedRectangle(cornerRadius: theme.pillCornerRadius)
+                            .fill(isHovering ? theme.hoverOverlay : theme.glassBackground)
                     }
 
-                    RoundedRectangle(cornerRadius: isCLI ? 4 : 20)
-                        .stroke(pillBorderColor, lineWidth: 1)
+                    RoundedRectangle(cornerRadius: theme.pillCornerRadius)
+                        .stroke(isSelected ? theme.accentPrimary.opacity(0.5) : theme.glassBorder, lineWidth: 1)
                 }
             )
         }
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }
-    }
-
-    private var pillForegroundColor: Color {
-        if isSelected {
-            return isCLI ? AppTheme.cliBlack : .white
-        }
-        return isCLI ? AppTheme.cliTextPrimary : AppTheme.textPrimary(for: colorScheme)
-    }
-
-    private var pillBackgroundColor: Color {
-        if isCLI {
-            return AppTheme.cliCharcoal.opacity(isHovering ? 1 : 0.8)
-        }
-        if colorScheme == .dark {
-            return Color.white.opacity(isHovering ? 0.18 : 0.12)
-        } else {
-            return Color.white.opacity(isHovering ? 0.95 : 0.85)
-        }
-    }
-
-    private var pillBorderColor: Color {
-        if isCLI {
-            return isSelected ? AppTheme.cliGreen.opacity(0.6) : AppTheme.cliDarkGray
-        }
-        if isSelected {
-            return colorScheme == .dark ? Color.white.opacity(0.3) : Color.white.opacity(0.5)
-        }
-        return colorScheme == .dark
-            ? Color.white.opacity(0.15)
-            : AppTheme.purpleVibrant(for: colorScheme).opacity(0.2)
     }
 
     private var providerIcon: String {
@@ -690,21 +638,12 @@ struct WrappedStatCard: View {
     let quota: UsageQuota
     let delay: Double
 
-    @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.isCLITheme) private var isCLI
+    @Environment(\.appTheme) private var theme
     @State private var isHovering = false
     @State private var animateProgress = false
 
     private var statusColor: Color {
-        if isCLI {
-            switch quota.status {
-            case .healthy: return AppTheme.cliStatusHealthy
-            case .warning: return AppTheme.cliStatusWarning
-            case .critical: return AppTheme.cliStatusCritical
-            case .depleted: return AppTheme.cliStatusDepleted
-            }
-        }
-        return quota.status.themeColor(for: colorScheme)
+        theme.statusColor(for: quota.status)
     }
 
     var body: some View {
@@ -718,8 +657,8 @@ struct WrappedStatCard: View {
                         .foregroundStyle(statusColor)
 
                     Text(quota.quotaType.displayName.uppercased())
-                        .font(isCLI ? .system(size: 8, weight: .medium, design: .monospaced) : AppTheme.captionFont(size: 8))
-                        .foregroundStyle(isCLI ? AppTheme.cliTextSecondary : AppTheme.textSecondary(for: colorScheme))
+                        .font(.system(size: 8, weight: .medium, design: theme.fontDesign))
+                        .foregroundStyle(theme.textSecondary)
                         .tracking(0.3)
                 }
 
@@ -733,25 +672,25 @@ struct WrappedStatCard: View {
             // Large percentage number
             HStack(alignment: .firstTextBaseline, spacing: 1) {
                 Text("\(Int(quota.percentRemaining))")
-                    .font(isCLI ? .system(size: 32, weight: .bold, design: .monospaced) : AppTheme.statFont(size: 32))
-                    .foregroundStyle(isCLI ? AppTheme.cliTextPrimary : AppTheme.textPrimary(for: colorScheme))
+                    .font(.system(size: 32, weight: .bold, design: theme.fontDesign))
+                    .foregroundStyle(theme.textPrimary)
                     .contentTransition(.numericText())
 
                 Text("%")
-                    .font(isCLI ? .system(size: 16, weight: .medium, design: .monospaced) : AppTheme.titleFont(size: 16))
-                    .foregroundStyle(isCLI ? AppTheme.cliTextTertiary : AppTheme.textTertiary(for: colorScheme))
+                    .font(.system(size: 16, weight: .medium, design: theme.fontDesign))
+                    .foregroundStyle(theme.textTertiary)
             }
 
             // Progress bar with gradient
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     // Track
-                    RoundedRectangle(cornerRadius: isCLI ? 2 : 3)
-                        .fill(progressTrackColor)
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(theme.progressTrack)
 
                     // Fill
-                    RoundedRectangle(cornerRadius: isCLI ? 2 : 3)
-                        .fill(isCLI ? cliProgressGradient : AppTheme.progressGradient(for: quota.percentRemaining, scheme: colorScheme))
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(theme.progressGradient(for: quota.percentRemaining))
                         .frame(width: animateProgress ? geo.size.width * quota.percentRemaining / 100 : 0)
                         .animation(.spring(response: 0.8, dampingFraction: 0.7).delay(delay + 0.2), value: animateProgress)
                 }
@@ -765,27 +704,20 @@ struct WrappedStatCard: View {
                         .font(.system(size: 7))
 
                     Text(resetText)
-                        .font(isCLI ? .system(size: 8, weight: .medium, design: .monospaced) : AppTheme.captionFont(size: 8))
+                        .font(.system(size: 8, weight: .medium, design: theme.fontDesign))
                 }
-                .foregroundStyle(isCLI ? AppTheme.cliTextTertiary : AppTheme.textTertiary(for: colorScheme))
+                .foregroundStyle(theme.textTertiary)
                 .lineLimit(1)
             }
         }
         .padding(12)
         .background(
             ZStack {
-                RoundedRectangle(cornerRadius: isCLI ? 6 : 14)
-                    .fill(isCLI ? AppTheme.cliCardGradient : AppTheme.cardGradient(for: colorScheme))
+                RoundedRectangle(cornerRadius: theme.cardCornerRadius)
+                    .fill(theme.cardGradient)
 
-                // Light mode shadow (not for CLI)
-                if colorScheme == .light && !isCLI {
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(Color.clear)
-                        .shadow(color: AppTheme.glassShadow(for: colorScheme), radius: 6, y: 3)
-                }
-
-                RoundedRectangle(cornerRadius: isCLI ? 6 : 14)
-                    .stroke(isCLI ? LinearGradient(colors: [AppTheme.cliDarkGray], startPoint: .leading, endPoint: .trailing) : cardBorderGradient, lineWidth: 1)
+                RoundedRectangle(cornerRadius: theme.cardCornerRadius)
+                    .stroke(theme.glassBorder, lineWidth: 1)
             }
         )
         .scaleEffect(isHovering ? 1.015 : 1.0)
@@ -794,39 +726,6 @@ struct WrappedStatCard: View {
         .onAppear {
             animateProgress = true
         }
-    }
-
-    private var cliProgressGradient: LinearGradient {
-        let color: Color = switch quota.percentRemaining {
-        case 0..<20: AppTheme.cliStatusCritical
-        case 20..<50: AppTheme.cliStatusWarning
-        default: AppTheme.cliStatusHealthy
-        }
-        return LinearGradient(colors: [color, color.opacity(0.8)], startPoint: .leading, endPoint: .trailing)
-    }
-
-    private var progressTrackColor: Color {
-        if isCLI {
-            return AppTheme.cliDarkGray
-        }
-        return colorScheme == .dark
-            ? Color.white.opacity(0.15)
-            : AppTheme.purpleDeep(for: colorScheme).opacity(0.1)
-    }
-
-    private var cardBorderGradient: LinearGradient {
-        LinearGradient(
-            colors: [
-                colorScheme == .dark
-                    ? Color.white.opacity(isHovering ? 0.35 : 0.25)
-                    : AppTheme.purpleVibrant(for: colorScheme).opacity(isHovering ? 0.3 : 0.18),
-                colorScheme == .dark
-                    ? Color.white.opacity(0.08)
-                    : AppTheme.pinkHot(for: colorScheme).opacity(0.08)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
     }
 
     private var iconName: String {
@@ -868,7 +767,7 @@ struct LoadingSpinnerView: View {
 
             Text("Fetching usage data...")
                 .font(AppTheme.bodyFont(size: 13))
-                .foregroundStyle(AppTheme.textSecondary(for: colorScheme))
+                .foregroundStyle(theme.textSecondary)
         }
         .frame(height: 140)
         .frame(maxWidth: .infinity)
@@ -886,10 +785,9 @@ struct WrappedActionButton: View {
     let label: String
     let gradient: LinearGradient
     var isLoading: Bool = false
-    var isChristmas: Bool = false
     let action: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.appTheme) private var theme
     @State private var isHovering = false
 
     var body: some View {
@@ -899,65 +797,33 @@ struct WrappedActionButton: View {
                     ProgressView()
                         .scaleEffect(0.5)
                         .frame(width: 14, height: 14)
-                        .tint(isChristmas ? AppTheme.christmasTextPrimary : AppTheme.textPrimary(for: colorScheme))
+                        .tint(theme.textPrimary)
                 } else {
                     Image(systemName: icon)
                         .font(.system(size: 12, weight: .semibold))
                 }
 
                 Text(label)
-                    .font(AppTheme.bodyFont(size: 12))
+                    .font(.system(size: 12, weight: .medium, design: theme.fontDesign))
                     .fixedSize()
             }
-            .foregroundStyle(buttonForegroundColor)
+            .foregroundStyle(isHovering ? .white : theme.textPrimary)
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
             .background(
                 ZStack {
                     Capsule()
-                        .fill(isHovering ? AnyShapeStyle(gradient) : AnyShapeStyle(buttonBackgroundColor))
+                        .fill(isHovering ? AnyShapeStyle(gradient) : AnyShapeStyle(theme.glassBackground))
 
                     Capsule()
-                        .stroke(buttonBorderColor, lineWidth: 1)
+                        .stroke(theme.glassBorder, lineWidth: 1)
                 }
             )
-            .shadow(color: isHovering ? shadowColor : .clear, radius: 8, y: 2)
+            .shadow(color: isHovering ? theme.accentPrimary.opacity(0.3) : .clear, radius: 8, y: 2)
         }
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }
         .disabled(isLoading)
-    }
-
-    private var buttonForegroundColor: Color {
-        if isHovering {
-            return .white
-        }
-        return isChristmas ? AppTheme.christmasTextPrimary : AppTheme.textPrimary(for: colorScheme)
-    }
-
-    private var buttonBackgroundColor: Color {
-        if isChristmas {
-            return AppTheme.christmasGlassBackground
-        }
-        return colorScheme == .dark
-            ? Color.white.opacity(0.15)
-            : Color.white.opacity(0.85)
-    }
-
-    private var buttonBorderColor: Color {
-        if isChristmas {
-            return AppTheme.christmasGlassBorder
-        }
-        return colorScheme == .dark
-            ? Color.white.opacity(0.2)
-            : AppTheme.purpleVibrant(for: colorScheme).opacity(0.2)
-    }
-
-    private var shadowColor: Color {
-        if isChristmas {
-            return AppTheme.christmasGold.opacity(0.4)
-        }
-        return AppTheme.coralAccent(for: colorScheme).opacity(colorScheme == .dark ? 0.3 : 0.2)
     }
 }
 
@@ -1053,23 +919,11 @@ struct PulsingStatusDot: View {
 
 /// A polished badge indicating an update is available
 struct UpdateBadge: View {
-    var isChristmas: Bool = false
-
-    @Environment(\.colorScheme) private var colorScheme
+    var accentColor: Color = BaseTheme.coralAccent
 
     private var badgeGradient: LinearGradient {
-        if isChristmas {
-            return LinearGradient(
-                colors: [AppTheme.christmasGold, AppTheme.christmasRed],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
-        return LinearGradient(
-            colors: [
-                AppTheme.coralAccent(for: colorScheme),
-                AppTheme.pinkHot(for: colorScheme)
-            ],
+        LinearGradient(
+            colors: [accentColor, accentColor.opacity(0.7)],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )

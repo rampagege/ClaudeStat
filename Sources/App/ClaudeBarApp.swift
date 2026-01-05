@@ -74,15 +74,15 @@ struct ClaudeBarApp: App {
         MenuBarExtra {
             #if ENABLE_SPARKLE
             MenuContentView(monitor: monitor, quotaAlerter: quotaAlerter)
-                .themeProvider(currentThemeMode)
+                .appThemeProvider(themeModeId: settings.themeMode)
                 .environment(\.sparkleUpdater, sparkleUpdater)
             #else
             MenuContentView(monitor: monitor, quotaAlerter: quotaAlerter)
-                .themeProvider(currentThemeMode)
+                .appThemeProvider(themeModeId: settings.themeMode)
             #endif
         } label: {
             // Show overall status (worst across all enabled providers) in menu bar
-            StatusBarIcon(status: monitor.overallStatus, isChristmas: currentThemeMode == .christmas)
+            StatusBarIcon(status: monitor.overallStatus, themeModeId: settings.themeMode)
         }
         .menuBarExtraStyle(.window)
     }
@@ -91,7 +91,15 @@ struct ClaudeBarApp: App {
 /// The menu bar icon that reflects the overall quota status
 struct StatusBarIcon: View {
     let status: QuotaStatus
-    var isChristmas: Bool = false
+    var themeModeId: String = "system"
+
+    private var isChristmas: Bool {
+        themeModeId == "christmas"
+    }
+
+    private var isCLI: Bool {
+        themeModeId == "cli"
+    }
 
     var body: some View {
         Image(systemName: iconName)
@@ -102,6 +110,9 @@ struct StatusBarIcon: View {
     private var iconName: String {
         if isChristmas {
             return "snowflake"
+        }
+        if isCLI {
+            return "terminal.fill"
         }
         switch status {
         case .depleted:
@@ -117,7 +128,10 @@ struct StatusBarIcon: View {
 
     private var iconColor: Color {
         if isChristmas {
-            return AppTheme.christmasGold
+            return ChristmasTheme().accentPrimary
+        }
+        if isCLI {
+            return CLITheme().accentPrimary
         }
         return status.displayColor
     }
@@ -152,10 +166,16 @@ struct StatusBarIcon: View {
                 .foregroundStyle(.red)
         }
         VStack {
-            StatusBarIcon(status: .healthy, isChristmas: true)
+            StatusBarIcon(status: .healthy, themeModeId: "cli")
+            Text("CLI")
+                .font(.caption)
+                .foregroundStyle(CLITheme().accentPrimary)
+        }
+        VStack {
+            StatusBarIcon(status: .healthy, themeModeId: "christmas")
             Text("CHRISTMAS")
                 .font(.caption)
-                .foregroundStyle(AppTheme.christmasGold)
+                .foregroundStyle(ChristmasTheme().accentPrimary)
         }
     }
     .padding(40)
