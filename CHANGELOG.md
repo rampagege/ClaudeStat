@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-01-08
+
+### Added
+- **Background Sync**: Your quota data now syncs automatically in the background, so it's always fresh when you open the menu. No more waiting! Configure sync intervals (30s, 1min, 2min, or 5min) in Settings → Background Sync.
+- **Fresh App Logo**: Updated app icon with a refreshed design.
+
+### Improved
+- **Better CLI Detection**: Fixed issues finding Claude, Codex, and other CLI tools on systems with custom shell configurations. The app now uses your login shell to properly resolve PATH ([#45](https://github.com/tddworks/ClaudeBar/issues/45)).
+
+### Fixed
+- **Update Window Focus**: The update dialog now properly comes to the front when checking for updates.
+
+### Technical
+- Added `backgroundSyncEnabled` and `backgroundSyncInterval` settings to `AppSettings`
+- Implemented background sync lifecycle in `MenuContentView` with start/stop/restart controls
+- Added Background Sync settings card to Settings UI with interval picker
+- Uses existing `QuotaMonitor.startMonitoring()` infrastructure for efficient polling
+- Added `shellPath()` to `InteractiveRunner` for accurate shell environment resolution
+
 ## [0.3.0] - 2026-01-05
 
 ### Added
@@ -257,7 +276,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Menu bar interface with quota display
 - Automatic refresh every 5 minutes
 
-[Unreleased]: https://github.com/tddworks/ClaudeBar/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/tddworks/ClaudeBar/compare/v0.3.4...HEAD
+[0.3.4]: https://github.com/tddworks/ClaudeBar/compare/v0.3.0...v0.3.4
 [0.3.0]: https://github.com/tddworks/ClaudeBar/compare/v0.2.15...v0.3.0
 [0.2.15]: https://github.com/tddworks/ClaudeBar/compare/v0.2.14...v0.2.15
 [0.2.14]: https://github.com/tddworks/ClaudeBar/compare/v0.2.13...v0.2.14
