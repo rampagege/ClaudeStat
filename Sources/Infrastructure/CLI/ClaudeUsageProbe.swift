@@ -450,15 +450,34 @@ public final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
         let lines = text.components(separatedBy: .newlines)
         let label = labelSubstring.lowercased()
 
-        for (idx, line) in lines.enumerated() where line.lowercased().contains(label) {
-            let window = lines.dropFirst(idx).prefix(12)
-            for candidate in window {
-                if let pct = percentFromLine(candidate) {
-                    return pct
+        // Create fuzzy pattern: allow missing/extra chars between words
+        // "Current session" -> matches "currentsession", "curretsession", "current session", etc.
+        let words = label.split(separator: " ").map { String($0) }
+        let fuzzyPattern = words.map { NSRegularExpression.escapedPattern(for: $0).prefix(4) }.joined(separator: ".*?")
+
+        for (idx, line) in lines.enumerated() {
+            let lineLower = line.lowercased()
+            // Try exact match first, then fuzzy match
+            let matches = lineLower.contains(label) || matchesFuzzy(lineLower, pattern: fuzzyPattern)
+            if matches {
+                let window = lines.dropFirst(idx).prefix(12)
+                for candidate in window {
+                    if let pct = percentFromLine(candidate) {
+                        return pct
+                    }
                 }
             }
         }
         return nil
+    }
+
+    /// Fuzzy match using regex pattern (e.g., "curr.*?sess" matches "currentsession")
+    private func matchesFuzzy(_ text: String, pattern: String) -> Bool {
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
+            return false
+        }
+        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+        return regex.firstMatch(in: text, options: [], range: range) != nil
     }
 
     internal func extractPercent(labelSubstrings: [String], text: String) -> Int? {
@@ -491,14 +510,22 @@ public final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
         let lines = text.components(separatedBy: .newlines)
         let label = labelSubstring.lowercased()
 
-        for (idx, line) in lines.enumerated() where line.lowercased().contains(label) {
-            let window = lines.dropFirst(idx).prefix(14)
-            for candidate in window {
-                let lower = candidate.lowercased()
-                // Look for "resets" or time indicators like "2h" or "30m"
-                if lower.contains("reset") ||
-                   (lower.contains("in") && (lower.contains("h") || lower.contains("m"))) {
-                    return candidate.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Create fuzzy pattern for corrupted terminal output
+        let words = label.split(separator: " ").map { String($0) }
+        let fuzzyPattern = words.map { NSRegularExpression.escapedPattern(for: $0).prefix(4) }.joined(separator: ".*?")
+
+        for (idx, line) in lines.enumerated() {
+            let lineLower = line.lowercased()
+            let matches = lineLower.contains(label) || matchesFuzzy(lineLower, pattern: fuzzyPattern)
+            if matches {
+                let window = lines.dropFirst(idx).prefix(14)
+                for candidate in window {
+                    let lower = candidate.lowercased()
+                    // Look for "resets" or time indicators like "2h" or "30m"
+                    if lower.contains("reset") ||
+                       (lower.contains("in") && (lower.contains("h") || lower.contains("m"))) {
+                        return candidate.trimmingCharacters(in: .whitespacesAndNewlines)
+                    }
                 }
             }
         }

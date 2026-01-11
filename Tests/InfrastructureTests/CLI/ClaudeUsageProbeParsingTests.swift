@@ -636,6 +636,69 @@ struct ClaudeUsageProbeParsingTests {
         #expect(probe.parseDurationString("2h 30m 45.5s") > expected)
     }
 
+     // MARK: - Corrupted Terminal Output (Claude CLI v2.1.4+)
+
+    // Real corrupted output from Claude CLI v2.1.4 where terminal control sequences
+    // cause text to overlap (e.g., "Current session" becomes "Curretsession")
+    static let corruptedTerminalOutput = """
+    Opus 4.5 · Claude Max · user@example.com's Organization
+
+    Curretsession    ████▌9%used
+    Resets6pm (Asia/Shanghai)
+
+    Current week (all models)
+    ███████████▌                                       23% used
+    Resets Jan 15, 4pm (Asia/Shanghai)
+    """
+
+    @Test
+    func `parses corrupted session label from terminal output`() throws {
+        // Given - output with corrupted "Current session" -> "Curretsession"
+        let output = Self.corruptedTerminalOutput
+
+        // When
+        let snapshot = try ClaudeUsageProbe.parse(output)
+
+        // Then - should still parse the session quota (9% used = 91% remaining)
+        #expect(snapshot.sessionQuota != nil)
+        #expect(snapshot.sessionQuota?.percentRemaining == 91)
+    }
+
+    @Test
+    func `parses weekly quota from mixed corrupted output`() throws {
+        // Given - output with corrupted session but normal weekly
+        let output = Self.corruptedTerminalOutput
+
+        // When
+        let snapshot = try ClaudeUsageProbe.parse(output)
+
+        // Then - weekly quota should parse normally (23% used = 77% remaining)
+        #expect(snapshot.weeklyQuota != nil)
+        #expect(snapshot.weeklyQuota?.percentRemaining == 77)
+    }
+
+    @Test
+    func `fuzzy matching handles various corruptions`() throws {
+        // Given - probe instance for testing fuzzy matching
+        let probe = ClaudeUsageProbe()
+
+        // Test various corrupted forms
+        let corruptions = [
+            "Curretsession 50% used",      // missing letters
+            "Currentsession 50% used",     // no space
+            "Current  session 50% used",   // extra space
+            "current session 50% used",    // lowercase
+        ]
+
+        for corrupted in corruptions {
+            // When
+            let pct = probe.extractPercent(labelSubstring: "Current session", text: corrupted)
+
+            // Then
+            #expect(pct == 50, "Should parse '\(corrupted)'")
+        }
+    }
+
     // MARK: - Helper
 
     private func simulateParse(text: String) throws -> UsageSnapshot {
