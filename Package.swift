@@ -14,6 +14,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.8.1"),
         .package(url: "https://github.com/Kolos65/Mockable.git", from: "0.5.0"),
+        .package(url: "https://github.com/migueldeicaza/SwiftTerm.git", from: "1.5.1"),
     ],
     targets: [
         // MARK: - Domain Layer (Rich domain models, business logic, ports)
@@ -37,6 +38,7 @@ let package = Package(
             dependencies: [
                 "Domain",
                 .product(name: "Mockable", package: "Mockable"),
+                .product(name: "SwiftTerm", package: "SwiftTerm"),
             ],
             path: "Sources/Infrastructure",
             swiftSettings: [

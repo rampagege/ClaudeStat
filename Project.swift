@@ -9,6 +9,7 @@ let project = Project(
     packages: [
         .remote(url: "https://github.com/sparkle-project/Sparkle", requirement: .upToNextMajor(from: "2.8.1")),
         .remote(url: "https://github.com/Kolos65/Mockable.git", requirement: .upToNextMajor(from: "0.5.0")),
+        .remote(url: "https://github.com/migueldeicaza/SwiftTerm.git", requirement: .upToNextMajor(from: "1.2.0")),
     ],
     settings: .settings(
         base: [
@@ -54,6 +55,7 @@ let project = Project(
             dependencies: [
                 .target(name: "Domain"),
                 .package(product: "Mockable"),
+                .package(product: "SwiftTerm"),
             ],
             settings: .settings(
                 base: [

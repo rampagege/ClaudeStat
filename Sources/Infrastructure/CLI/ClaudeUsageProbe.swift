@@ -1,5 +1,6 @@
 import Foundation
 import Domain
+import SwiftTerm
 
 /// Infrastructure adapter that probes the Claude CLI to fetch usage quotas.
 /// Implements the UsageProbe protocol from the domain layer.
@@ -7,6 +8,7 @@ public final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
     private let claudeBinary: String
     private let timeout: TimeInterval
     private let cliExecutor: CLIExecutor
+    private let terminalRenderer: TerminalRenderer
 
     public init(
         claudeBinary: String = "claude",
@@ -16,6 +18,7 @@ public final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
         self.claudeBinary = claudeBinary
         self.timeout = timeout
         self.cliExecutor = cliExecutor ?? DefaultCLIExecutor()
+        self.terminalRenderer = TerminalRenderer(cols: 160, rows: 50)
     }
 
     public func isAvailable() async -> Bool {
@@ -140,7 +143,7 @@ public final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
     /// Total code changes:    0 lines added, 0 lines removed
     /// ```
     internal func parseCostOutput(_ text: String) throws -> UsageSnapshot {
-        let clean = stripANSICodes(text)
+        let clean = renderTerminalOutput(text)
 
         // Extract total cost: "$0.55" or "0.55"
         guard let cost = extractCostValue(clean) else {
@@ -230,7 +233,11 @@ public final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
     }
 
     private func parseClaudeOutput(_ text: String) throws -> UsageSnapshot {
-        let clean = stripANSICodes(text)
+        let clean = renderTerminalOutput(text)
+
+        // Log both original and normalized output for debugging
+        AppLog.probes.debug("Claude /usage raw output (\(text.count) chars):\n\(text)")
+        AppLog.probes.debug("Claude /usage normalized output (\(clean.count) chars):\n\(clean)")
 
         // Check for errors first
         if let error = extractUsageError(clean) {
@@ -252,8 +259,9 @@ public final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
         // Extract percentages
         let sessionPct = extractPercent(labelSubstring: "Current session", text: clean)
         let weeklyPct = extractPercent(labelSubstring: "Current week (all models)", text: clean)
-        let opusPct = extractPercent(labelSubstrings: [
-            "Current week (Opus)",
+        // Check for model-specific quota (Opus or Sonnet)
+        let opusPct = extractPercent(labelSubstring: "Current week (Opus)", text: clean)
+        let sonnetPct = extractPercent(labelSubstrings: [
             "Current week (Sonnet only)",
             "Current week (Sonnet)",
         ], text: clean)
@@ -294,6 +302,16 @@ public final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
             quotas.append(UsageQuota(
                 percentRemaining: Double(opusPct),
                 quotaType: .modelSpecific("opus"),
+                providerId: "claude",
+                resetsAt: parseResetDate(weeklyReset),
+                resetText: cleanResetText(weeklyReset)
+            ))
+        }
+
+        if let sonnetPct {
+            quotas.append(UsageQuota(
+                percentRemaining: Double(sonnetPct),
+                quotaType: .modelSpecific("sonnet"),
                 providerId: "claude",
                 resetsAt: parseResetDate(weeklyReset),
                 resetText: cleanResetText(weeklyReset)
@@ -441,43 +459,25 @@ public final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
 
     // MARK: - Text Parsing Helpers
 
-    internal func stripANSICodes(_ text: String) -> String {
-        let pattern = #"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])"#
-        return text.replacingOccurrences(of: pattern, with: "", options: .regularExpression)
+    /// Renders raw terminal output into clean text using SwiftTerm.
+    /// Properly handles cursor movements, screen clearing, and other control sequences.
+    internal func renderTerminalOutput(_ text: String) -> String {
+        terminalRenderer.render(text)
     }
 
     internal func extractPercent(labelSubstring: String, text: String) -> Int? {
         let lines = text.components(separatedBy: .newlines)
         let label = labelSubstring.lowercased()
 
-        // Create fuzzy pattern: allow missing/extra chars between words
-        // "Current session" -> matches "currentsession", "curretsession", "current session", etc.
-        let words = label.split(separator: " ").map { String($0) }
-        let fuzzyPattern = words.map { NSRegularExpression.escapedPattern(for: $0).prefix(4) }.joined(separator: ".*?")
-
-        for (idx, line) in lines.enumerated() {
-            let lineLower = line.lowercased()
-            // Try exact match first, then fuzzy match
-            let matches = lineLower.contains(label) || matchesFuzzy(lineLower, pattern: fuzzyPattern)
-            if matches {
-                let window = lines.dropFirst(idx).prefix(12)
-                for candidate in window {
-                    if let pct = percentFromLine(candidate) {
-                        return pct
-                    }
+        for (idx, line) in lines.enumerated() where line.lowercased().contains(label) {
+            let window = lines.dropFirst(idx).prefix(12)
+            for candidate in window {
+                if let pct = percentFromLine(candidate) {
+                    return pct
                 }
             }
         }
         return nil
-    }
-
-    /// Fuzzy match using regex pattern (e.g., "curr.*?sess" matches "currentsession")
-    private func matchesFuzzy(_ text: String, pattern: String) -> Bool {
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
-            return false
-        }
-        let range = NSRange(text.startIndex..<text.endIndex, in: text)
-        return regex.firstMatch(in: text, options: [], range: range) != nil
     }
 
     internal func extractPercent(labelSubstrings: [String], text: String) -> Int? {
@@ -510,22 +510,14 @@ public final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
         let lines = text.components(separatedBy: .newlines)
         let label = labelSubstring.lowercased()
 
-        // Create fuzzy pattern for corrupted terminal output
-        let words = label.split(separator: " ").map { String($0) }
-        let fuzzyPattern = words.map { NSRegularExpression.escapedPattern(for: $0).prefix(4) }.joined(separator: ".*?")
-
-        for (idx, line) in lines.enumerated() {
-            let lineLower = line.lowercased()
-            let matches = lineLower.contains(label) || matchesFuzzy(lineLower, pattern: fuzzyPattern)
-            if matches {
-                let window = lines.dropFirst(idx).prefix(14)
-                for candidate in window {
-                    let lower = candidate.lowercased()
-                    // Look for "resets" or time indicators like "2h" or "30m"
-                    if lower.contains("reset") ||
-                       (lower.contains("in") && (lower.contains("h") || lower.contains("m"))) {
-                        return candidate.trimmingCharacters(in: .whitespacesAndNewlines)
-                    }
+        for (idx, line) in lines.enumerated() where line.lowercased().contains(label) {
+            let window = lines.dropFirst(idx).prefix(14)
+            for candidate in window {
+                let lower = candidate.lowercased()
+                // Look for "resets" or time indicators like "2h" or "30m"
+                if lower.contains("reset") ||
+                   (lower.contains("in") && (lower.contains("h") || lower.contains("m"))) {
+                    return candidate.trimmingCharacters(in: .whitespacesAndNewlines)
                 }
             }
         }
@@ -547,24 +539,23 @@ public final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
 
     internal func extractOrganization(text: String) -> String? {
         // Try old format first: "Organization: org" or "Org: org"
-        let oldPattern = #"(?i)(?:Org|Organization):\s*(.+)"#
+        let oldPattern = #"(?i)(?:Org|Organization):\s*([^\n]+)"#
         if let org = extractFirst(pattern: oldPattern, text: text) {
-            return org
+            return org.trimmingCharacters(in: .whitespaces)
         }
 
         // Try header format: "Opus 4.5 · Claude Max · email@example.com's Organization"
         // or "Opus 4.5 · Claude Pro · Organization"
-        let headerPattern = #"·\s*Claude\s+(?:Max|Pro)\s*·\s*(.+?)(?:\s*$|\n)"#
+        let headerPattern = #"·\s*Claude\s+(?:Max|Pro)\s*·\s*([^\n]+)"#
         if let match = extractFirst(pattern: headerPattern, text: text) {
-            // Clean up the organization string
-            return match.trimmingCharacters(in: .whitespacesAndNewlines)
+            return match.trimmingCharacters(in: .whitespaces)
         }
         return nil
     }
 
     internal func extractLoginMethod(text: String) -> String? {
-        let pattern = #"(?i)login\s+method:\s*(.+)"#
-        return extractFirst(pattern: pattern, text: text)
+        let pattern = #"(?i)login\s+method:\s*([^\n]+)"#
+        return extractFirst(pattern: pattern, text: text)?.trimmingCharacters(in: .whitespaces)
     }
 
     internal func extractFirst(pattern: String, text: String) -> String? {
@@ -577,6 +568,7 @@ public final class ClaudeUsageProbe: UsageProbe, @unchecked Sendable {
               let r = Range(match.range(at: 1), in: text) else {
             return nil
         }
+        // Terminal renderer pads lines with spaces - always trim the result
         return String(text[r]).trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
