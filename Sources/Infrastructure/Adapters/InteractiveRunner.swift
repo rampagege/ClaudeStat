@@ -88,7 +88,13 @@ public struct InteractiveRunner: Sendable {
         input: String,
         options: Options = Options()
     ) throws -> Result {
+        let totalStart = CFAbsoluteTimeGetCurrent()
+
+        let findStart = CFAbsoluteTimeGetCurrent()
         let executablePath = try findExecutable(binary)
+        let findElapsed = CFAbsoluteTimeGetCurrent() - findStart
+        AppLog.probes.debug("InteractiveRunner: findExecutable('\(binary)') took \(String(format: "%.3f", findElapsed))s")
+
         let (primaryFD, secondaryFD) = try openTerminal()
 
         _ = fcntl(primaryFD, F_SETFL, O_NONBLOCK)
@@ -127,6 +133,7 @@ public struct InteractiveRunner: Sendable {
 
         defer { cleanup() }
 
+        let runStart = CFAbsoluteTimeGetCurrent()
         try process.run()
         didLaunch = true
 
@@ -143,10 +150,15 @@ public struct InteractiveRunner: Sendable {
             process: process,
             options: options
         )
+        let runElapsed = CFAbsoluteTimeGetCurrent() - runStart
+        AppLog.probes.debug("InteractiveRunner: process execution took \(String(format: "%.3f", runElapsed))s")
 
         guard let text = String(data: buffer, encoding: .utf8), !text.isEmpty else {
             throw RunError.timedOut
         }
+
+        let totalElapsed = CFAbsoluteTimeGetCurrent() - totalStart
+        AppLog.probes.debug("InteractiveRunner: total run() took \(String(format: "%.3f", totalElapsed))s for '\(binary)'")
 
         let exitCode: Int32 = process.isRunning ? -1 : process.terminationStatus
         return Result(output: text, exitCode: exitCode)
@@ -219,8 +231,8 @@ public struct InteractiveRunner: Sendable {
     ) throws -> Data {
         let deadline = Date().addingTimeInterval(options.timeout)
         var buffer = Data()
-        var lastDataTime = Date()
-        let idleTimeout: TimeInterval = 3.0  // Exit if no new data for 3 seconds
+        var lastMeaningfulDataTime = Date()
+        let idleTimeout: TimeInterval = 3.0  // Exit if no new meaningful data for 3 seconds
 
         let promptResponses = options.autoResponses.map {
             (prompt: Data($0.key.utf8), response: Data($0.value.utf8))
@@ -231,9 +243,12 @@ public struct InteractiveRunner: Sendable {
             let previousSize = buffer.count
             readAvailableData(from: fd, into: &buffer)
 
-            // Track when we last received data
+            // Track when we last received MEANINGFUL data (not just OSC/escape sequences)
             if buffer.count > previousSize {
-                lastDataTime = Date()
+                let newData = buffer.suffix(from: previousSize)
+                if isMeaningfulData(newData) {
+                    lastMeaningfulDataTime = Date()
+                }
             }
 
             // Auto-respond to any recognized prompts
@@ -241,16 +256,15 @@ public struct InteractiveRunner: Sendable {
                 if buffer.range(of: item.prompt) != nil {
                     try? handle.write(contentsOf: item.response)
                     respondedPrompts.insert(item.prompt)
-                    lastDataTime = Date()  // Reset idle timer after responding
+                    lastMeaningfulDataTime = Date()  // Reset idle timer after responding
                 }
             }
 
             // Exit if process stopped
             if !process.isRunning { break }
 
-            // Exit if we have meaningful output (not just escape sequences) and idle
-            // This prevents early exit when CLI outputs escape codes then pauses for network
-            if hasMeaningfulContent(buffer) && Date().timeIntervalSince(lastDataTime) > idleTimeout {
+            // Exit if we have meaningful output and no new meaningful data for idleTimeout
+            if hasMeaningfulContent(buffer) && Date().timeIntervalSince(lastMeaningfulDataTime) > idleTimeout {
                 break
             }
 
@@ -260,6 +274,34 @@ public struct InteractiveRunner: Sendable {
         // Capture any remaining output
         readAvailableData(from: fd, into: &buffer)
         return buffer
+    }
+
+    /// Checks if newly received data is meaningful (not just OSC/title sequences).
+    /// OSC sequences like `ESC ] 0 ; title BEL` are used for terminal title updates
+    /// and should not reset the idle timer.
+    private func isMeaningfulData(_ data: Data) -> Bool {
+        guard let text = String(data: data, encoding: .utf8) else {
+            return !data.isEmpty  // Non-UTF8 binary data is considered meaningful
+        }
+
+        // Strip OSC sequences (terminal title updates like "✶ Claude Code")
+        // OSC format: ESC ] ... BEL  or  ESC ] ... ESC \
+        var stripped = text
+        if let oscRegex = Self.oscRegex {
+            stripped = oscRegex.stringByReplacingMatches(
+                in: stripped,
+                range: NSRange(stripped.startIndex..., in: stripped),
+                withTemplate: ""
+            )
+        }
+
+        // Strip other non-printing control sequences
+        stripped = stripped.replacingOccurrences(of: "\u{1B}", with: "")
+        stripped = stripped.replacingOccurrences(of: "\u{07}", with: "")  // BEL
+
+        // Check if anything meaningful remains
+        let meaningful = stripped.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !meaningful.isEmpty
     }
     
     // MARK: - ANSI Escape Sequence Handling
