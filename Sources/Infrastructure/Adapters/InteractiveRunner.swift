@@ -384,12 +384,37 @@ public struct InteractiveRunner: Sendable {
     /// Ensures CLI tools behave as they would in a normal terminal.
     private static func terminalEnvironment() -> [String: String] {
         var env = ProcessInfo.processInfo.environment
-        env["PATH"] = BinaryLocator.shellPath()
+        env["PATH"] = ensureCommonPathsIncluded(BinaryLocator.shellPath())
         env["HOME"] = env["HOME"] ?? NSHomeDirectory()
         env["TERM"] = env["TERM"] ?? "xterm-256color"
         env["COLORTERM"] = env["COLORTERM"] ?? "truecolor"
         env["LANG"] = env["LANG"] ?? "en_US.UTF-8"
         env["CI"] = env["CI"] ?? "0"
         return env
+    }
+
+    /// Ensures common tool paths are included in PATH.
+    ///
+    /// When apps are launched from Finder/launchd, the PATH obtained from login shell
+    /// may not include paths configured in .zshrc/.bashrc (which are only loaded for
+    /// interactive shells). This ensures common installation paths are always available.
+    private static func ensureCommonPathsIncluded(_ path: String) -> String {
+        let essentialPaths = [
+            "/opt/homebrew/bin",  // Homebrew on Apple Silicon
+            "/opt/homebrew/sbin",
+            "/usr/local/bin",     // Homebrew on Intel / common tools
+            "/usr/local/sbin",
+        ]
+
+        var components = path.split(separator: ":").map(String.init)
+        let fm = FileManager.default
+
+        for essentialPath in essentialPaths.reversed() {
+            if !components.contains(essentialPath) && fm.fileExists(atPath: essentialPath) {
+                components.insert(essentialPath, at: 0)
+            }
+        }
+
+        return components.joined(separator: ":")
     }
 }
