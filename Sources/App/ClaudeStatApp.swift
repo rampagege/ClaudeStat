@@ -1,9 +1,78 @@
 import SwiftUI
 import Domain
 import Infrastructure
+import Combine
 #if ENABLE_SPARKLE
 import Sparkle
 #endif
+
+/// Manages background sync outside of SwiftUI view hierarchy to avoid layout loops
+@MainActor
+final class BackgroundSyncManager {
+    private var monitor: QuotaMonitor?
+    private var cancellables = Set<AnyCancellable>()
+    private var syncTask: Task<Void, Never>?
+    private var lastInterval: Double = 0
+    private var lastEnabled: Bool = false
+
+    func configure(monitor: QuotaMonitor) {
+        self.monitor = monitor
+
+        // Check settings periodically (every 1 second) to detect changes
+        // This avoids SwiftUI onChange which can cause layout loops
+        Timer.publish(every: 1.0, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                self?.checkAndUpdateSync()
+            }
+            .store(in: &cancellables)
+
+        // Initial check
+        checkAndUpdateSync()
+    }
+
+    private func checkAndUpdateSync() {
+        let settings = AppSettings.shared
+        let enabled = settings.backgroundSyncEnabled
+        let interval = settings.backgroundSyncInterval
+
+        // Only act if something changed
+        if enabled != lastEnabled || (enabled && interval != lastInterval) {
+            lastEnabled = enabled
+            lastInterval = interval
+
+            if enabled {
+                startSync(interval: interval)
+            } else {
+                stopSync()
+            }
+        }
+    }
+
+    private func startSync(interval: Double) {
+        guard let monitor = monitor else { return }
+
+        // Cancel existing task
+        syncTask?.cancel()
+        monitor.stopMonitoring()
+
+        AppLog.monitor.info("BackgroundSyncManager: Starting sync (interval: \(interval)s)")
+
+        syncTask = Task {
+            let stream = monitor.startMonitoring(interval: .seconds(interval))
+            for await _ in stream {
+                // Events handled internally by QuotaMonitor
+            }
+        }
+    }
+
+    private func stopSync() {
+        AppLog.monitor.info("BackgroundSyncManager: Stopping sync")
+        syncTask?.cancel()
+        syncTask = nil
+        monitor?.stopMonitoring()
+    }
+}
 
 @main
 struct ClaudeStatApp: App {
@@ -13,6 +82,9 @@ struct ClaudeStatApp: App {
 
     /// Alerts users when quota status degrades
     private let quotaAlerter = NotificationAlerter()
+
+    /// Manages background sync outside SwiftUI to avoid layout loops
+    private let backgroundSyncManager = BackgroundSyncManager()
 
     #if ENABLE_SPARKLE
     /// Sparkle updater for auto-updates
@@ -63,6 +135,9 @@ struct ClaudeStatApp: App {
         )
         AppLog.monitor.info("QuotaMonitor initialized")
 
+        // Configure background sync manager
+        backgroundSyncManager.configure(monitor: monitor)
+
         // Note: Notification permission is requested in onAppear, not here
         // Menu bar apps need the run loop to be active before requesting permissions
 
@@ -71,6 +146,13 @@ struct ClaudeStatApp: App {
 
     /// App settings for theme
     @State private var settings = AppSettings.shared
+
+    /// Cached quota values for status bar (to avoid @Observable triggering MenuBarExtra redraws)
+    @State private var statusBarSession: Double?
+    @State private var statusBarWeek: Double?
+
+    /// Whether initial fetch has been done
+    @State private var hasInitialFetch = false
 
     /// Current theme mode from settings
     private var currentThemeMode: ThemeMode {
@@ -83,22 +165,34 @@ struct ClaudeStatApp: App {
             MenuContentView(monitor: monitor, quotaAlerter: quotaAlerter)
                 .appThemeProvider(themeModeId: settings.themeMode)
                 .environment(\.sparkleUpdater, sparkleUpdater)
+                .onAppear { updateStatusBarCache() }
             #else
             MenuContentView(monitor: monitor, quotaAlerter: quotaAlerter)
                 .appThemeProvider(themeModeId: settings.themeMode)
+                .onAppear { updateStatusBarCache() }
             #endif
         } label: {
             // Show Session and Week quotas as vertical bars (like iStat Menus)
+            // Uses cached values to avoid @Observable triggering redraws
             StatusBarLabel(
-                sessionPercent: monitor.selectedProvider?.snapshot?.sessionQuota?.percentRemaining,
-                weekPercent: monitor.selectedProvider?.snapshot?.weeklyQuota?.percentRemaining
+                sessionPercent: statusBarSession,
+                weekPercent: statusBarWeek
             )
             .task {
+                guard !hasInitialFetch else { return }
+                hasInitialFetch = true
                 // Fetch Claude (default provider) quota on app launch
                 await monitor.refresh(providerId: "claude")
+                updateStatusBarCache()
             }
         }
         .menuBarExtraStyle(.window)
+    }
+
+    /// Updates the cached status bar values from monitor
+    private func updateStatusBarCache() {
+        statusBarSession = monitor.selectedProvider?.snapshot?.sessionQuota?.percentRemaining
+        statusBarWeek = monitor.selectedProvider?.snapshot?.weeklyQuota?.percentRemaining
     }
 
     private func formatPercent(_ value: Double?) -> String {

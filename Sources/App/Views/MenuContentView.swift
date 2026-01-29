@@ -87,14 +87,11 @@ struct MenuContentView: View {
             if showSharePass, let claudeProvider = selectedProvider as? ClaudeProvider,
                let guestPass = claudeProvider.guestPass {
                 SharePassOverlay(pass: guestPass) {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        showSharePass = false
-                    }
+                    showSharePass = false
                 }
             }
         }
         .frame(width: 400)
-        .fixedSize(horizontal: false, vertical: true)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .task {
             // Request alert permission once (after app run loop is active)
@@ -102,24 +99,15 @@ struct MenuContentView: View {
                 hasRequestedNotificationPermission = true
                 let granted = await quotaAlerter.requestPermission()
                 AppLog.notifications.info("Alert permission request result: \(granted ? "granted" : "denied")")
-
-                // Start background sync on first app launch (only once)
-                if settings.backgroundSyncEnabled && !monitor.isMonitoring {
-                    startBackgroundSync()
-                }
             }
 
-            // Show header and tabs immediately
-            withAnimation(.easeOut(duration: 0.6)) {
-                animateIn = true
-            }
+            // Show content without animation to avoid constraint update loops
+            animateIn = true
+
             // Then fetch data in background
             await refresh(providerId: selectedProviderId)
 
-            // Check for updates when menu opens (no UI unless update found)
-            #if ENABLE_SPARKLE
-            sparkleUpdater?.checkForUpdatesInBackground()
-            #endif
+            // Note: Sparkle update check moved to manual trigger to avoid layout issues
         }
         .onChange(of: selectedProviderId) { _, newProviderId in
             // Refresh when user switches provider
@@ -127,43 +115,7 @@ struct MenuContentView: View {
                 await refresh(providerId: newProviderId)
             }
         }
-        .onChange(of: settings.backgroundSyncEnabled) { _, enabled in
-            // React to background sync toggle
-            if enabled {
-                startBackgroundSync()
-            } else {
-                stopBackgroundSync()
-            }
-        }
-        .onChange(of: settings.backgroundSyncInterval) { _, _ in
-            // Restart sync with new interval
-            if settings.backgroundSyncEnabled {
-                restartBackgroundSync()
-            }
-        }
-    }
-
-    // MARK: - Background Sync Control
-
-    private func startBackgroundSync() {
-        let interval = Duration.seconds(settings.backgroundSyncInterval)
-        AppLog.monitor.info("Starting background sync (interval: \(settings.backgroundSyncInterval)s)")
-        Task {
-            let stream = monitor.startMonitoring(interval: interval)
-            for await _ in stream {
-                // Events handled internally by QuotaMonitor
-            }
-        }
-    }
-
-    private func stopBackgroundSync() {
-        AppLog.monitor.info("Stopping background sync")
-        monitor.stopMonitoring()
-    }
-
-    private func restartBackgroundSync() {
-        stopBackgroundSync()
-        startBackgroundSync()
+        // Note: Background sync is managed at the App level to avoid layout loops
     }
 
     // MARK: - Background Orbs

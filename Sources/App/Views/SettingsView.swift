@@ -1647,11 +1647,10 @@ struct SettingsContentView: View {
             backgroundSyncHeader
                 .contentShape(.rect)
                 .onTapGesture {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        backgroundSyncExpanded.toggle()
-                    }
+                    backgroundSyncExpanded.toggle()
                 }
         }
+        .animation(nil, value: backgroundSyncExpanded)
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: theme.cardCornerRadius)
@@ -1711,9 +1710,7 @@ struct SettingsContentView: View {
             Spacer()
 
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    showSettings = false
-                }
+                showSettings = false
             } label: {
                 Text("Done")
                     .font(.system(size: 11, weight: .medium, design: theme.fontDesign))
