@@ -5,15 +5,15 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleExecutable</key>
-    <string>ClaudeBar</string>
+    <string>ClaudeStat</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
-    <string>com.tddworks.claudebar</string>
+    <string>com.x.claudestat</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>ClaudeBar</string>
+    <string>ClaudeStat</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -31,11 +31,11 @@
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
     <key>SUFeedURL</key>
-    <string>https://tddworks.github.io/ClaudeBar/appcast.xml</string>
+    <string>https://x.github.io/ClaudeStat/appcast.xml</string>
     <key>SUPublicEDKey</key>
     <string>2Kn6vvvrrNqgAWrzOiq5Ae+abMjEqlu2MOOM/YBlsw0=</string>
     <key>SUEnableAutomaticChecks</key>
-    <true/>
+    <false/>
     <key>SUAutomaticallyUpdate</key>
     <false/>
 </dict>

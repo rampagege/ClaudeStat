@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to ClaudeBar will be documented in this file.
+All notable changes to ClaudeStat will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.15] - 2026-01-23
 
 ### Added
-- **AWS Bedrock Support**: Monitor your AWS Bedrock AI usage directly from the menu bar. Track daily costs, token counts, and per-model breakdowns for your Claude, Llama, and other Bedrock models. ([#75](https://github.com/tddworks/ClaudeBar/pull/75) - thanks [@tomstetson](https://github.com/tomstetson)!)
+- **AWS Bedrock Support**: Monitor your AWS Bedrock AI usage directly from the menu bar. Track daily costs, token counts, and per-model breakdowns for your Claude, Llama, and other Bedrock models. ([#75](https://github.com/x/ClaudeStat/pull/75) - thanks [@tomstetson](https://github.com/tomstetson)!)
 - **Bedrock Usage Card**: New dedicated view showing daily costs, input/output token counts, and detailed per-model usage breakdown
 - **Provider Icon**: New Bedrock provider icon with AWS orange theme for easy identification
 
@@ -63,7 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Fresh App Logo**: Updated app icon with a refreshed design.
 
 ### Improved
-- **Better CLI Detection**: Fixed issues finding Claude, Codex, and other CLI tools on systems with custom shell configurations. The app now uses your login shell to properly resolve PATH ([#45](https://github.com/tddworks/ClaudeBar/issues/45)).
+- **Better CLI Detection**: Fixed issues finding Claude, Codex, and other CLI tools on systems with custom shell configurations. The app now uses your login shell to properly resolve PATH ([#45](https://github.com/x/ClaudeStat/issues/45)).
 
 ### Fixed
 - **Update Window Focus**: The update dialog now properly comes to the front when checking for updates.
@@ -78,7 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0] - 2026-01-05
 
 ### Added
-- **Pluggable Theme System**: ClaudeBar now supports multiple visual themes with a protocol-based architecture. Switch themes instantly from Settings to match your workflow and preferences.
+- **Pluggable Theme System**: ClaudeStat now supports multiple visual themes with a protocol-based architecture. Switch themes instantly from Settings to match your workflow and preferences.
 - **CLI Terminal Theme**: New monochrome, terminal-inspired theme for developers who prefer a classic command-line aesthetic. Features monospace fonts, green accents, and a retro terminal look.
 - **Theme-Specific Menu Bar Icons**: Each theme can display its own custom menu bar icon, providing a cohesive visual experience across the entire app.
 
@@ -114,8 +114,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CLI Diagnostics**: When Claude CLI is not found, the app now logs PATH and CLAUDE_CONFIG_DIR environment variables to help diagnose installation issues.
 
 ### Fixed
-- **UI Layout Issues** ([#40](https://github.com/tddworks/ClaudeBar/issues/40)): Fixed layout constraints that caused views to break on certain screen sizes.
-- **Claude Detection for API Accounts** ([#37](https://github.com/tddworks/ClaudeBar/issues/37)): Fixed issue where users with API Usage Billing accounts couldn't see Claude quota information.
+- **UI Layout Issues** ([#40](https://github.com/x/ClaudeStat/issues/40)): Fixed layout constraints that caused views to break on certain screen sizes.
+- **Claude Detection for API Accounts** ([#37](https://github.com/x/ClaudeStat/issues/37)): Fixed issue where users with API Usage Billing accounts couldn't see Claude quota information.
 
 ### Technical
 - Extended `ProbeError` with `subscriptionRequired` case for API billing detection
@@ -256,7 +256,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.4] - 2025-12-29
 
 ### Added
-- **Dual-Output Logging**: Logs now write to both OSLog (for developers via Console.app) and persistent files (for users) at `~/Library/Logs/ClaudeBar/ClaudeBar.log`
+- **Dual-Output Logging**: Logs now write to both OSLog (for developers via Console.app) and persistent files (for users) at `~/Library/Logs/ClaudeStat/ClaudeStat.log`
 - **Open Logs Button**: New "Open Logs Folder" button in Settings for easy access to log files when troubleshooting
 - **Comprehensive Error Logging**: All AI provider probes now log detailed error information for easier debugging
 
@@ -325,26 +325,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Menu bar interface with quota display
 - Automatic refresh every 5 minutes
 
-[Unreleased]: https://github.com/tddworks/ClaudeBar/compare/v0.3.15...HEAD
-[0.3.15]: https://github.com/tddworks/ClaudeBar/compare/v0.3.12...v0.3.15
-[0.3.12]: https://github.com/tddworks/ClaudeBar/compare/v0.3.6...v0.3.12
-[0.3.6]: https://github.com/tddworks/ClaudeBar/compare/v0.3.4...v0.3.6
-[0.3.4]: https://github.com/tddworks/ClaudeBar/compare/v0.3.0...v0.3.4
-[0.3.0]: https://github.com/tddworks/ClaudeBar/compare/v0.2.15...v0.3.0
-[0.2.15]: https://github.com/tddworks/ClaudeBar/compare/v0.2.14...v0.2.15
-[0.2.14]: https://github.com/tddworks/ClaudeBar/compare/v0.2.13...v0.2.14
-[0.2.13]: https://github.com/tddworks/ClaudeBar/compare/v0.2.12...v0.2.13
-[0.2.12]: https://github.com/tddworks/ClaudeBar/compare/v0.2.11...v0.2.12
-[0.2.11]: https://github.com/tddworks/ClaudeBar/compare/v0.2.10...v0.2.11
-[0.2.10]: https://github.com/tddworks/ClaudeBar/compare/v0.2.9...v0.2.10
-[0.2.9]: https://github.com/tddworks/ClaudeBar/compare/v0.2.8...v0.2.9
-[0.2.8]: https://github.com/tddworks/ClaudeBar/compare/v0.2.7...v0.2.8
-[0.2.7]: https://github.com/tddworks/ClaudeBar/compare/v0.2.6...v0.2.7
-[0.2.6]: https://github.com/tddworks/ClaudeBar/compare/v0.2.5...v0.2.6
-[0.2.5]: https://github.com/tddworks/ClaudeBar/compare/v0.2.4...v0.2.5
-[0.2.4]: https://github.com/tddworks/ClaudeBar/compare/v0.2.3...v0.2.4
-[0.2.3]: https://github.com/tddworks/ClaudeBar/compare/v0.2.2...v0.2.3
-[0.2.2]: https://github.com/tddworks/ClaudeBar/compare/v0.2.1...v0.2.2
-[0.2.1]: https://github.com/tddworks/ClaudeBar/compare/v0.2.0...v0.2.1
-[0.2.0]: https://github.com/tddworks/ClaudeBar/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/tddworks/ClaudeBar/releases/tag/v0.1.0
+[Unreleased]: https://github.com/x/ClaudeStat/compare/v0.3.15...HEAD
+[0.3.15]: https://github.com/x/ClaudeStat/compare/v0.3.12...v0.3.15
+[0.3.12]: https://github.com/x/ClaudeStat/compare/v0.3.6...v0.3.12
+[0.3.6]: https://github.com/x/ClaudeStat/compare/v0.3.4...v0.3.6
+[0.3.4]: https://github.com/x/ClaudeStat/compare/v0.3.0...v0.3.4
+[0.3.0]: https://github.com/x/ClaudeStat/compare/v0.2.15...v0.3.0
+[0.2.15]: https://github.com/x/ClaudeStat/compare/v0.2.14...v0.2.15
+[0.2.14]: https://github.com/x/ClaudeStat/compare/v0.2.13...v0.2.14
+[0.2.13]: https://github.com/x/ClaudeStat/compare/v0.2.12...v0.2.13
+[0.2.12]: https://github.com/x/ClaudeStat/compare/v0.2.11...v0.2.12
+[0.2.11]: https://github.com/x/ClaudeStat/compare/v0.2.10...v0.2.11
+[0.2.10]: https://github.com/x/ClaudeStat/compare/v0.2.9...v0.2.10
+[0.2.9]: https://github.com/x/ClaudeStat/compare/v0.2.8...v0.2.9
+[0.2.8]: https://github.com/x/ClaudeStat/compare/v0.2.7...v0.2.8
+[0.2.7]: https://github.com/x/ClaudeStat/compare/v0.2.6...v0.2.7
+[0.2.6]: https://github.com/x/ClaudeStat/compare/v0.2.5...v0.2.6
+[0.2.5]: https://github.com/x/ClaudeStat/compare/v0.2.4...v0.2.5
+[0.2.4]: https://github.com/x/ClaudeStat/compare/v0.2.3...v0.2.4
+[0.2.3]: https://github.com/x/ClaudeStat/compare/v0.2.2...v0.2.3
+[0.2.2]: https://github.com/x/ClaudeStat/compare/v0.2.1...v0.2.2
+[0.2.1]: https://github.com/x/ClaudeStat/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/x/ClaudeStat/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/x/ClaudeStat/releases/tag/v0.1.0

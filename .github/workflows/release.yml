@@ -27,8 +27,8 @@ permissions:
   id-token: write
 
 env:
-  APP_NAME: ClaudeBar
-  BUNDLE_ID: com.tddworks.claudebar
+  APP_NAME: ClaudeStat
+  BUNDLE_ID: com.x.claudestat
   SWIFT_VERSION: "6.2"
 
 jobs:
@@ -105,7 +105,7 @@ jobs:
         run: |
           tuist generate --no-open
           echo "=== Available schemes ==="
-          xcodebuild -workspace ClaudeBar.xcworkspace -list
+          xcodebuild -workspace ClaudeStat.xcworkspace -list
 
       - name: Build Universal App Bundle
         run: |
@@ -350,7 +350,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
-          name: ClaudeBar v${{ steps.version.outputs.version }}
+          name: ClaudeStat v${{ steps.version.outputs.version }}
           draft: false
           prerelease: ${{ steps.version.outputs.is_prerelease }}
           files: |
@@ -369,19 +369,19 @@ jobs:
 
             **Option 1: DMG (Recommended)**
             1. Download `${{ env.DMG_FILE }}`
-            2. Open the DMG and drag ClaudeBar.app to Applications
+            2. Open the DMG and drag ClaudeStat.app to Applications
             3. Launch from Applications folder
 
             **Option 2: ZIP**
             1. Download `${{ env.NOTARIZED_ZIP }}`
-            2. Unzip and move ClaudeBar.app to Applications
+            2. Unzip and move ClaudeStat.app to Applications
             3. Launch from Applications folder
 
             ## Verification
 
             SHA256 checksums are provided. Verify with:
             ```bash
-            shasum -a 256 -c ClaudeBar-${{ steps.version.outputs.version }}.zip.sha256
+            shasum -a 256 -c ClaudeStat-${{ steps.version.outputs.version }}.zip.sha256
             ```
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

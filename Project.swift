@@ -1,7 +1,7 @@
 import ProjectDescription
 
 let project = Project(
-    name: "ClaudeBar",
+    name: "ClaudeStat",
     options: .options(
         defaultKnownRegions: ["en"],
         developmentRegion: "en"
@@ -32,7 +32,7 @@ let project = Project(
             name: "Domain",
             destinations: .macOS,
             product: .staticFramework,
-            bundleId: "com.tddworks.claudebar.domain",
+            bundleId: "com.x.claudestat.domain",
             deploymentTargets: .macOS("15.0"),
             sources: ["Sources/Domain/**"],
             dependencies: [
@@ -50,7 +50,7 @@ let project = Project(
             name: "Infrastructure",
             destinations: .macOS,
             product: .staticFramework,
-            bundleId: "com.tddworks.claudebar.infrastructure",
+            bundleId: "com.x.claudestat.infrastructure",
             deploymentTargets: .macOS("15.0"),
             sources: ["Sources/Infrastructure/**"],
             dependencies: [
@@ -71,10 +71,10 @@ let project = Project(
 
         // MARK: - Main Application
         .target(
-            name: "ClaudeBar",
+            name: "ClaudeStat",
             destinations: .macOS,
             product: .app,
-            bundleId: "com.tddworks.claudebar",
+            bundleId: "com.x.claudestat",
             deploymentTargets: .macOS("15.0"),
             infoPlist: .file(path: "Sources/App/Info.plist"),
             sources: ["Sources/App/**"],
@@ -109,7 +109,7 @@ let project = Project(
             name: "DomainTests",
             destinations: .macOS,
             product: .unitTests,
-            bundleId: "com.tddworks.claudebar.domain-tests",
+            bundleId: "com.x.claudestat.domain-tests",
             deploymentTargets: .macOS("15.0"),
             sources: ["Tests/DomainTests/**"],
             dependencies: [
@@ -133,7 +133,7 @@ let project = Project(
             name: "InfrastructureTests",
             destinations: .macOS,
             product: .unitTests,
-            bundleId: "com.tddworks.claudebar.infrastructure-tests",
+            bundleId: "com.x.claudestat.infrastructure-tests",
             deploymentTargets: .macOS("15.0"),
             sources: ["Tests/InfrastructureTests/**"],
             dependencies: [
@@ -154,9 +154,9 @@ let project = Project(
     ],
     schemes: [
         .scheme(
-            name: "ClaudeBar",
+            name: "ClaudeStat",
             shared: true,
-            buildAction: .buildAction(targets: ["ClaudeBar"]),
+            buildAction: .buildAction(targets: ["ClaudeStat"]),
             testAction: .targets(
                 [
                     .testableTarget(target: .target("DomainTests")),
@@ -164,9 +164,9 @@ let project = Project(
                 ],
                 configuration: .debug
             ),
-            runAction: .runAction(configuration: .debug, executable: .target("ClaudeBar")),
+            runAction: .runAction(configuration: .debug, executable: .target("ClaudeStat")),
             archiveAction: .archiveAction(configuration: .release),
-            profileAction: .profileAction(configuration: .release, executable: .target("ClaudeBar")),
+            profileAction: .profileAction(configuration: .release, executable: .target("ClaudeStat")),
             analyzeAction: .analyzeAction(configuration: .debug)
         ),
     ]

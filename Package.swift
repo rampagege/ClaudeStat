@@ -2,12 +2,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "ClaudeBar",
+    name: "ClaudeStat",
     platforms: [
         .macOS(.v15),
     ],
     products: [
-        .executable(name: "ClaudeBar", targets: ["ClaudeBar"]),
+        .executable(name: "ClaudeStat", targets: ["ClaudeStat"]),
         .library(name: "Domain", targets: ["Domain"]),
         .library(name: "Infrastructure", targets: ["Infrastructure"]),
     ],
@@ -56,7 +56,7 @@ let package = Package(
         // MARK: - Main Application (UI directly exposes domain)
         // SwiftUI views directly use rich domain models - no ViewModel layer
         .executableTarget(
-            name: "ClaudeBar",
+            name: "ClaudeStat",
             dependencies: [
                 "Domain",
                 "Infrastructure",

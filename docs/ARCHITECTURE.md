@@ -1,10 +1,10 @@
-# ClaudeBar Architecture
+# ClaudeStat Architecture
 
-This document is the **single source of truth** for ClaudeBar's architecture. All other documentation should reference this file.
+This document is the **single source of truth** for ClaudeStat's architecture. All other documentation should reference this file.
 
 ## Overview
 
-ClaudeBar follows a **layered architecture** with clear separation of concerns:
+ClaudeStat follows a **layered architecture** with clear separation of concerns:
 
 - **Domain Layer** - Pure business logic, no external dependencies
 - **Infrastructure Layer** - Technical implementations (CLI, network, storage)
@@ -18,7 +18,7 @@ The key principle is **QuotaMonitor as Single Source of Truth** - all provider s
 ┌─────────────────────────────────────────────────────────────────────┐
 │                           APP LAYER                                  │
 │                                                                      │
-│  ClaudeBarApp                                                       │
+│  ClaudeStatApp                                                       │
 │  └── @State var monitor: QuotaMonitor  (injected to views)          │
 │                                                                      │
 │  Views (consume domain directly - NO AppState/ViewModel)            │
@@ -330,7 +330,7 @@ Sources/
 │   └── Notifications/               # NotificationAlerter (implements QuotaAlerter)
 │
 └── App/                             # SwiftUI application
-    ├── ClaudeBarApp.swift           # Entry point, wires dependencies
+    ├── ClaudeStatApp.swift           # Entry point, wires dependencies
     ├── Views/                       # SwiftUI views
     ├── Settings/                    # AppSettings (theme, etc.)
     └── Resources/                   # Assets, Info.plist

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-ClaudeBar is a macOS menu bar application that monitors AI coding assistant usage quotas (Claude, Codex, Gemini, GitHub Copilot, Antigravity). It probes CLI tools to fetch quota information and displays it in a menu bar interface with system notifications for status changes.
+ClaudeStat is a macOS menu bar application that monitors AI coding assistant usage quotas (Claude, Codex, Gemini, GitHub Copilot, Antigravity). It probes CLI tools to fetch quota information and displays it in a menu bar interface with system notifications for status changes.
 
 ## Build & Test Commands
 
@@ -24,7 +24,7 @@ swift test --filter DomainTests
 swift test --filter "QuotaMonitorTests/monitor fetches usage from a single provider"
 
 # Run the app (requires macOS 15+)
-swift run ClaudeBar
+swift run ClaudeStat
 ```
 
 ### Using Tuist (Xcode with SwiftUI Previews)
@@ -36,7 +36,7 @@ The project uses [Tuist](https://tuist.io) to generate Xcode projects with prope
 tuist generate
 
 # Open in Xcode (after generating)
-open ClaudeBar.xcworkspace
+open ClaudeStat.xcworkspace
 
 # Regenerate after changing Project.swift
 tuist generate
@@ -132,7 +132,7 @@ The skill will guide you through:
 2. **Probe Behavior Tests** → Test detection and error handling with mocks
 3. **Probe Implementation** → Implement `UsageProbe` in `Sources/Infrastructure/CLI/`
 4. **Provider Class** → Create `AIProvider` in `Sources/Domain/Provider/`
-5. **Registration** → Add to `ClaudeBarApp.init()` providers array
+5. **Registration** → Add to `ClaudeStatApp.init()` providers array
 
 **Repository Selection (ISP):**
 - **Simple provider** (no special config) → Use base `ProviderSettingsRepository`
@@ -223,7 +223,7 @@ Or use the manual workflow dispatch in GitHub Actions with version input.
 The app uses a **dual-output logging system** via `AppLog` in `Sources/Infrastructure/Logging/`:
 
 - **OSLog** (for developers): Full privacy controls, visible in Console.app
-- **File** (for users): Persistent logs at `~/Library/Logs/ClaudeBar/ClaudeBar.log`
+- **File** (for users): Persistent logs at `~/Library/Logs/ClaudeStat/ClaudeStat.log`
 
 ### AppLog Categories
 
@@ -265,8 +265,8 @@ For sensitive debugging that needs OSLog privacy controls, use OSLog directly.
 
 ### File Logging Details
 
-- **Location**: `~/Library/Logs/ClaudeBar/ClaudeBar.log`
-- **Rotation**: Rotates to `ClaudeBar.old.log` at 5MB
+- **Location**: `~/Library/Logs/ClaudeStat/ClaudeStat.log`
+- **Rotation**: Rotates to `ClaudeStat.old.log` at 5MB
 - **Format**: `[YYYY-MM-DD HH:MM:SS] [LEVEL] [category] message`
 - **Access**: Settings → "Open Logs Folder" button
 
@@ -275,25 +275,25 @@ For sensitive debugging that needs OSLog privacy controls, use OSLog directly.
 **File logs (for users):**
 ```bash
 # Open in Finder (or use Settings → Open Logs Folder)
-open ~/Library/Logs/ClaudeBar/
+open ~/Library/Logs/ClaudeStat/
 
 # Tail the log
-tail -f ~/Library/Logs/ClaudeBar/ClaudeBar.log
+tail -f ~/Library/Logs/ClaudeStat/ClaudeStat.log
 ```
 
 **OSLog (for developers):**
 ```bash
 # Console.app filter
-subsystem:com.tddworks.ClaudeBar
+subsystem:com.x.ClaudeStat
 
 # Terminal - show all levels (including debug)
-log show --predicate 'subsystem == "com.tddworks.ClaudeBar"' --info --debug --last 1h
+log show --predicate 'subsystem == "com.x.ClaudeStat"' --info --debug --last 1h
 
 # Terminal - errors only
-log show --predicate 'subsystem == "com.tddworks.ClaudeBar" AND messageType == error' --last 1h
+log show --predicate 'subsystem == "com.x.ClaudeStat" AND messageType == error' --last 1h
 
 # Live stream (for debugging)
-log stream --predicate 'subsystem == "com.tddworks.ClaudeBar"' --info --debug
+log stream --predicate 'subsystem == "com.x.ClaudeStat"' --info --debug
 ```
 
 ### Debugging Probe Issues
@@ -302,10 +302,10 @@ When a probe fails (e.g., `claude /usage`), all errors are logged with context:
 
 ```bash
 # File log - grep for probe issues
-grep -i "probe" ~/Library/Logs/ClaudeBar/ClaudeBar.log
+grep -i "probe" ~/Library/Logs/ClaudeStat/ClaudeStat.log
 
 # OSLog - probe-specific logs
-log show --predicate 'subsystem == "com.tddworks.ClaudeBar" AND category == "probes"' --info --debug --last 1h
+log show --predicate 'subsystem == "com.x.ClaudeStat" AND category == "probes"' --info --debug --last 1h
 ```
 
 Common error patterns logged:

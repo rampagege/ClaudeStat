@@ -1,19 +1,19 @@
-# ClaudeBar
+# ClaudeStat
 
-[![Build](https://github.com/tddworks/ClaudeBar/actions/workflows/build.yml/badge.svg)](https://github.com/tddworks/ClaudeBar/actions/workflows/build.yml)
-[![Tests](https://github.com/tddworks/ClaudeBar/actions/workflows/tests.yml/badge.svg)](https://github.com/tddworks/ClaudeBar/actions/workflows/tests.yml)
-[![codecov](https://codecov.io/gh/tddworks/ClaudeBar/graph/badge.svg)](https://codecov.io/gh/tddworks/ClaudeBar)
-[![Latest Release](https://img.shields.io/github/v/release/tddworks/ClaudeBar)](https://github.com/tddworks/ClaudeBar/releases/latest)
+[![Build](https://github.com/x/ClaudeStat/actions/workflows/build.yml/badge.svg)](https://github.com/x/ClaudeStat/actions/workflows/build.yml)
+[![Tests](https://github.com/x/ClaudeStat/actions/workflows/tests.yml/badge.svg)](https://github.com/x/ClaudeStat/actions/workflows/tests.yml)
+[![codecov](https://codecov.io/gh/x/ClaudeStat/graph/badge.svg)](https://codecov.io/gh/x/ClaudeStat)
+[![Latest Release](https://img.shields.io/github/v/release/x/ClaudeStat)](https://github.com/x/ClaudeStat/releases/latest)
 [![Swift 6.2](https://img.shields.io/badge/Swift-6.2-orange.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/Platform-macOS%2015-blue.svg)](https://developer.apple.com)
-[![Homebrew](https://img.shields.io/badge/Homebrew-Install-brightgreen.svg)](https://formulae.brew.sh/cask/claudebar)
+[![Homebrew](https://img.shields.io/badge/Homebrew-Install-brightgreen.svg)](https://formulae.brew.sh/cask/claudestat)
 
 A macOS menu bar application that monitors AI coding assistant usage quotas. Keep track of your Claude, Codex, Gemini, GitHub Copilot, Antigravity, and Z.ai usage at a glance.
 
 <p align="center">
-  <img src="docs/Screenshot-dark.png" alt="ClaudeBar Dark Mode" width="380"/>
+  <img src="docs/Screenshot-dark.png" alt="ClaudeStat Dark Mode" width="380"/>
   &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="docs/Screenshot-light.png" alt="ClaudeBar Light Mode" width="380"/>
+  <img src="docs/Screenshot-light.png" alt="ClaudeStat Light Mode" width="380"/>
 </p>
 <p align="center">
   <em>Dark Mode &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Light Mode</em>
@@ -22,7 +22,7 @@ A macOS menu bar application that monitors AI coding assistant usage quotas. Kee
 ### CLI Theme
 
 <p align="center">
-  <img src="docs/Screenshot-cli-dark.png" alt="ClaudeBar CLI Theme" width="380"/>
+  <img src="docs/Screenshot-cli-dark.png" alt="ClaudeStat CLI Theme" width="380"/>
 </p>
 <p align="center">
   <em>Minimalistic monochrome terminal aesthetic with classic green accents</em>
@@ -31,7 +31,7 @@ A macOS menu bar application that monitors AI coding assistant usage quotas. Kee
 ### Christmas Theme
 
 <p align="center">
-  <img src="docs/Christmas-theme.png" alt="ClaudeBar Christmas Theme" width="380"/>
+  <img src="docs/Christmas-theme.png" alt="ClaudeStat Christmas Theme" width="380"/>
 </p>
 <p align="center">
   <em>Festive holiday theme with snowfall animation - automatically enabled during the Christmas season!</em>
@@ -77,30 +77,30 @@ A macOS menu bar application that monitors AI coding assistant usage quotas. Kee
 Install via [Homebrew](https://brew.sh).
 
 ```bash
-brew install claudebar
+brew install claudestat
 ```
 
 ### Download (Recommended)
 
-Download the latest release from [GitHub Releases](https://github.com/tddworks/ClaudeBar/releases/latest):
+Download the latest release from [GitHub Releases](https://github.com/x/ClaudeStat/releases/latest):
 
-- **DMG**: Open and drag ClaudeBar.app to Applications
-- **ZIP**: Unzip and move ClaudeBar.app to Applications
+- **DMG**: Open and drag ClaudeStat.app to Applications
+- **ZIP**: Unzip and move ClaudeStat.app to Applications
 
 Both are code-signed and notarized for Gatekeeper.
 
 ### Build from Source
 
 ```bash
-git clone https://github.com/tddworks/ClaudeBar.git
-cd ClaudeBar
+git clone https://github.com/x/ClaudeStat.git
+cd ClaudeStat
 swift build -c release
 ```
 
 ## Usage
 
 ```bash
-swift run ClaudeBar
+swift run ClaudeStat
 ```
 
 The app will appear in your menu bar. Click to view quota details for each provider.
@@ -135,7 +135,7 @@ brew install tuist
 tuist generate
 
 # Open in Xcode
-open ClaudeBar.xcworkspace
+open ClaudeStat.xcworkspace
 ```
 
 After opening in Xcode, SwiftUI previews will work with `Cmd+Option+Return`.
@@ -144,7 +144,7 @@ After opening in Xcode, SwiftUI previews will work with `Cmd+Option+Return`.
 
 > **Full documentation:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
-ClaudeBar uses a **layered architecture** with `QuotaMonitor` as the single source of truth:
+ClaudeStat uses a **layered architecture** with `QuotaMonitor` as the single source of truth:
 
 | Layer | Purpose |
 |-------|---------|

@@ -1,6 +1,6 @@
 # Release Setup Guide
 
-This guide explains how to set up the GitHub secrets required for automated releases of ClaudeBar.
+This guide explains how to set up the GitHub secrets required for automated releases of ClaudeStat.
 
 ## Overview
 
@@ -284,7 +284,7 @@ The GitHub Actions workflow will automatically:
 
 ## Part 5: Beta Channel Updates
 
-ClaudeBar uses Sparkle's channel feature to support beta updates. Users can opt into beta releases via Settings.
+ClaudeStat uses Sparkle's channel feature to support beta updates. Users can opt into beta releases via Settings.
 
 ### How Beta Channels Work
 

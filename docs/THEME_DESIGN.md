@@ -1,10 +1,10 @@
 # Theme System Design
 
-This document describes the pluggable theme architecture in ClaudeBar.
+This document describes the pluggable theme architecture in ClaudeStat.
 
 ## Overview
 
-ClaudeBar uses a **protocol-based theme system** that allows easy creation and registration of new themes. The design follows the same patterns used throughout the codebase (ISP, Protocol-Based DI).
+ClaudeStat uses a **protocol-based theme system** that allows easy creation and registration of new themes. The design follows the same patterns used throughout the codebase (ISP, Protocol-Based DI).
 
 ## Architecture
 

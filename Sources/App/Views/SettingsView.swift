@@ -1504,7 +1504,7 @@ struct SettingsContentView: View {
             .buttonStyle(.plain)
 
             // Help text
-            Text("Opens ClaudeBar.log in TextEdit")
+            Text("Opens ClaudeStat.log in TextEdit")
                 .font(.system(size: 9, weight: .semibold, design: theme.fontDesign))
                 .foregroundStyle(theme.textTertiary)
         }
@@ -1556,7 +1556,7 @@ struct SettingsContentView: View {
             }
 
             // GitHub Link
-            Link(destination: URL(string: "https://github.com/tddworks/claudebar")!) {
+            Link(destination: URL(string: "https://github.com/x/claudestat")!) {
                 HStack(spacing: 6) {
                     Image(systemName: "link")
                         .font(.system(size: 11, weight: .semibold))

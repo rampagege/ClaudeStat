@@ -215,8 +215,8 @@ public final class UserDefaultsProviderSettingsRepository: ZaiSettingsRepository
         static let bedrockRegions = "providerConfig.bedrockRegions"
         static let bedrockDailyBudget = "providerConfig.bedrockDailyBudget"
         // Credentials (kept compatible with old UserDefaultsCredentialRepository keys)
-        static let githubToken = "com.claudebar.credentials.github-copilot-token"
-        static let githubUsername = "com.claudebar.credentials.github-username"
+        static let githubToken = "com.claudestat.credentials.github-copilot-token"
+        static let githubUsername = "com.claudestat.credentials.github-username"
     }
 
     /// Generates the UserDefaults key for a provider's enabled state
